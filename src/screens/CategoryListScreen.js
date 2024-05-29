@@ -97,7 +97,7 @@ const CategoryListScreen = () => {
   };
 
   const navigateToCategoryDetail = (categoryId) => {
-    navigation.navigate('CategoryDetailScreen', { categoryId });
+    navigation.navigate('My Categories', { categoryId });
   };
 
   const renderCategoryItem = ({ item }) => {

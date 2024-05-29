@@ -13,10 +13,10 @@ export default function App() {
   return (
     <MenuProvider>
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="MyCategories">
+      <Stack.Navigator initialRouteName="Login">
         <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="CategoryDetailScreen" component={CategoryDetailScreen} />
-        <Stack.Screen name="MyCategories" component={CategoryListScreen} />
+        <Stack.Screen name="My Categories" component={CategoryDetailScreen} />
+        <Stack.Screen name="LogOut" component={CategoryListScreen} />
       </Stack.Navigator>
     </NavigationContainer>
     </MenuProvider>
