@@ -1,9 +1,5 @@
 {
   "expo": {
-    "permissions": [
-      "CAMERA",
-      "CAMERA_ROLL"
-    ],
     "name": "MyAfbpp",
     "slug": "MyAfbpp",
     "version": "1.0.0",
