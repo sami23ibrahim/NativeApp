@@ -1696,7 +1696,6 @@
 
 
 
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Dimensions, Modal, TextInput, Button, Alert, ActivityIndicator, TouchableWithoutFeedback } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -1706,7 +1705,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 
-const CategoryListScreen = () => {
+const CategoryListScreen = ({ navigation }) => {
   const [categories, setCategories] = useState([]);
   const [categoryName, setCategoryName] = useState('');
   const [imageUri, setImageUri] = useState('');
@@ -1715,10 +1714,14 @@ const CategoryListScreen = () => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [menuCategory, setMenuCategory] = useState(null);
-  const navigation = useNavigation();
   const route = useRoute();
-  const { teamId } = route.params; // Get teamId from route params
+  const { teamId, teamName } = route.params; // Get teamId and teamName from route params
   const numColumns = 2;
+
+  useEffect(() => {
+    navigation.setOptions({ title:'Team "' + teamName+'"' }); // Set the header title to the team name
+    fetchCategories();
+  }, [teamId, teamName]); // Add teamName to the dependency array
 
   const fetchCategories = async () => {
     const q = query(collection(db, 'categories'), where('teamId', '==', teamId));
@@ -1729,10 +1732,6 @@ const CategoryListScreen = () => {
     }));
     setCategories(fetchedCategories);
   };
-
-  useEffect(() => {
-    fetchCategories();
-  }, [teamId]);
 
   const selectImage = async () => {
     const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
@@ -1923,6 +1922,7 @@ const CategoryListScreen = () => {
           numColumns={numColumns}
           contentContainerStyle={styles.list}
         />
+        <Button title="Manage Team" onPress={() => navigation.navigate('ManageTeam', { teamId, teamName })} />
         <Modal
           animationType="slide"
           transparent={true}
