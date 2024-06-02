@@ -46,7 +46,7 @@ export default function App() {
         <Stack.Navigator initialRouteName="Login">
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="My Categories" component={CategoryDetailScreen} />
-          <Stack.Screen name="LogOut" component={CategoryListScreen} />
+          <Stack.Screen name="CategoryListScreen" component={CategoryListScreen} />
           <Stack.Screen name="Home" component={HomeScreen} /> 
         </Stack.Navigator>
       </NavigationContainer>
