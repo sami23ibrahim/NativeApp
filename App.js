@@ -77,7 +77,7 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator initialRouteName="Login">
           <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="My Categories" component={CategoryDetailScreen} />
+          <Stack.Screen name="CategoryDetailScreen" component={CategoryDetailScreen} />
           <Stack.Screen name="CategoryListScreen" component={CategoryListScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="ManageTeam" component={ManageTeamScreen} /> 
