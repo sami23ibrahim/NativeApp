@@ -68,7 +68,7 @@ import CategoryDetailScreen from './src/screens/CategoryDetailScreen';
 import HomeScreen from './src/screens/HomeScreen'; // Import the HomeScreen
 import ManageTeamScreen from './src/screens/ManageTeamScreen'; // Import the ManageTeamScreen
 import { MenuProvider } from 'react-native-popup-menu';
-
+import SignupScreen from './src/screens/SignupScreen';
 const Stack = createStackNavigator();
 
 export default function App() {
@@ -77,6 +77,7 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator initialRouteName="Login">
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Signup" component={SignupScreen} />
           <Stack.Screen name="CategoryDetailScreen" component={CategoryDetailScreen} />
           <Stack.Screen name="CategoryListScreen" component={CategoryListScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />

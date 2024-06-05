@@ -1,3 +1,5 @@
+
+
 // import React, { useState } from 'react';
 // import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 // import { getFirestore, doc, updateDoc, arrayUnion } from 'firebase/firestore';
@@ -67,11 +69,9 @@
 
 // export default JoinTeamModal;
 
-
-
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
-import { getFirestore, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
 import { FIREBASE_AUTH } from '../config/firebase';
 
 const JoinTeamModal = ({ setVisible, refreshTeams }) => {
@@ -82,12 +82,44 @@ const JoinTeamModal = ({ setVisible, refreshTeams }) => {
   const handleJoinTeam = async () => {
     try {
       const teamRef = doc(firestore, 'teams', teamId);
-      await updateDoc(teamRef, {
-        members: arrayUnion(user.uid),
-      });
-      Alert.alert('Joined team successfully!');
-      setVisible(false);
-      refreshTeams();
+      const teamSnapshot = await getDoc(teamRef);
+
+      if (teamSnapshot.exists()) {
+        const teamData = teamSnapshot.data();
+
+        // Check if the user is already in the team
+        const isMember = teamData.members.some(member => member.uid === user.uid);
+        if (isMember) {
+          Alert.alert('Error', 'You are already a member of this team.');
+          return;
+        }
+
+        // Fetch user details to get the imageUrl
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+        const userImageUrl = userDoc.data().imageUrl;
+
+        // Add user to the team's members array
+        await updateDoc(teamRef, {
+          members: arrayUnion({ uid: user.uid, name: user.displayName, imageUrl: userImageUrl, admin: false })
+        });
+
+        // Add team to the user's teams array
+        await updateDoc(userDocRef, {
+            teams: arrayUnion({
+            name: teamData.name,
+         // role: 'member', // or another appropriate role
+            teamId: teamId,
+            uid: user.uid,
+          })
+        });
+
+        Alert.alert('Joined team successfully!');
+        setVisible(false);
+        refreshTeams();
+      } else {
+        Alert.alert('Error', 'Team not found.');
+      }
     } catch (error) {
       console.error('Error joining team: ', error);
       Alert.alert('Error', 'Failed to join team.');
