@@ -253,7 +253,7 @@ const ManageTeamScreen = ({ route }) => {
           </MenuTrigger>
           <MenuOptions>
             <MenuOption onSelect={() => toggleAdminStatus(item)} text={item.admin ? 'Remove Admin' : 'Make Admin'} />
-            <MenuOption onSelect={() => deleteUser(item)} text="Delete User" />
+            <MenuOption onSelect={() => deleteUser(item)} text="Remove User" />
           </MenuOptions>
         </Menu>
       )}

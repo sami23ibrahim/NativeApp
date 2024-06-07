@@ -69,6 +69,8 @@ import HomeScreen from './src/screens/HomeScreen'; // Import the HomeScreen
 import ManageTeamScreen from './src/screens/ManageTeamScreen'; // Import the ManageTeamScreen
 import { MenuProvider } from 'react-native-popup-menu';
 import SignupScreen from './src/screens/SignupScreen';
+import UserSettingsScreen from './src/screens/UserSettingsScreen';
+
 const Stack = createStackNavigator();
 
 export default function App() {
@@ -82,6 +84,8 @@ export default function App() {
           <Stack.Screen name="CategoryListScreen" component={CategoryListScreen} />
           <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="ManageTeam" component={ManageTeamScreen} /> 
+          <Stack.Screen name="UserSettingsScreen" component={UserSettingsScreen} /> 
+          
         </Stack.Navigator>
       </NavigationContainer>
     </MenuProvider>

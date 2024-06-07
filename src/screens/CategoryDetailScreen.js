@@ -424,12 +424,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TextInput, Button, TouchableOpacity, Alert, StyleSheet, Modal, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { collection, addDoc, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, deleteDoc, updateDoc, query, where, getDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Menu, MenuOptions, MenuOption, MenuTrigger, MenuProvider } from 'react-native-popup-menu';
+import { Menu, MenuOptions, MenuOption, MenuTrigger } from 'react-native-popup-menu';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { FIREBASE_AUTH } from '../config/firebase';
 
 const CategoryDetailScreen = ({ navigation }) => {
   const route = useRoute();
@@ -442,13 +443,15 @@ const CategoryDetailScreen = ({ navigation }) => {
   const [addItemModalVisible, setAddItemModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [userRole, setUserRole] = useState(''); // To store the user's role
+  const user = FIREBASE_AUTH.currentUser;
 
   useEffect(() => {
     navigation.setOptions({ title: `"${teamName.toUpperCase()}"/${categoryName}` }); // Set the header title to the teamName/categoryName
-    fetchItems();
+    fetchItemsAndRole();
   }, [categoryId, categoryName, teamName]);
 
-  const fetchItems = async () => {
+  const fetchItemsAndRole = async () => {
     console.log('Fetching items for categoryId:', categoryId);
     const itemsCollection = collection(db, `categories/${categoryId}/items`);
     const itemsSnapshot = await getDocs(itemsCollection);
@@ -458,6 +461,17 @@ const CategoryDetailScreen = ({ navigation }) => {
     }));
     console.log('Fetched items:', itemsList);
     setItems(itemsList);
+
+    // Fetch user role
+    const teamDocRef = doc(db, 'teams', teamName);
+    const teamDoc = await getDoc(teamDocRef);
+    if (teamDoc.exists()) {
+      const teamData = teamDoc.data();
+      const member = teamData.members.find(m => m.uid === user.uid);
+      if (member) {
+        setUserRole(member.admin ? 'admin' : 'member');
+      }
+    }
   };
 
   const selectItemImage = async () => {
@@ -511,7 +525,7 @@ const CategoryDetailScreen = ({ navigation }) => {
         };
         const docRef = await addDoc(collection(db, `categories/${categoryId}/items`), newItem);
         console.log('Item added with ID:', docRef.id);
-        fetchItems();
+        fetchItemsAndRole();
         setItemName('');
         setItemImageUri('');
         setAddItemModalVisible(false);
@@ -535,7 +549,7 @@ const CategoryDetailScreen = ({ navigation }) => {
       await deleteDoc(itemDocRef);
       const imgRef = ref(storage, imgUrl);
       await deleteObject(imgRef);
-      fetchItems();
+      fetchItemsAndRole();
     } catch (error) {
       console.error('Error deleting item:', error);
       Alert.alert('Error', 'There was an error deleting the item.');
@@ -545,21 +559,21 @@ const CategoryDetailScreen = ({ navigation }) => {
   const incrementQuantity = async (itemId, currentQuantity) => {
     const itemRef = doc(db, `categories/${categoryId}/items`, itemId);
     await updateDoc(itemRef, { quantity: currentQuantity + 1 });
-    fetchItems();
+    fetchItemsAndRole();
   };
 
   const decrementQuantity = async (itemId, currentQuantity) => {
     if (currentQuantity > 0) {
       const itemRef = doc(db, `categories/${categoryId}/items`, itemId);
       await updateDoc(itemRef, { quantity: currentQuantity - 1 });
-      fetchItems();
+      fetchItemsAndRole();
     }
   };
 
   const updateQuantity = async (itemId, newQuantity) => {
     const itemRef = doc(db, `categories/${categoryId}/items`, itemId);
     await updateDoc(itemRef, { quantity: newQuantity });
-    fetchItems();
+    fetchItemsAndRole();
   };
 
   const editItemDetails = (item) => {
@@ -579,7 +593,7 @@ const CategoryDetailScreen = ({ navigation }) => {
 
         const itemRef = doc(db, `categories/${categoryId}/items`, editItem.id);
         await updateDoc(itemRef, { name: itemName, img: updatedImageUrl });
-        fetchItems();
+        fetchItemsAndRole();
         setModalVisible(false);
         setEditItem(null);
         setItemName('');
@@ -592,136 +606,137 @@ const CategoryDetailScreen = ({ navigation }) => {
   };
 
   return (
-    // <MenuProvider>
-      <KeyboardAwareScrollView
-        style={styles.container}
-        resetScrollToCoords={{ x: 0, y: 0 }}
-        contentContainerStyle={styles.container}
-        enableOnAndroid={true}
-      >
-        <View style={styles.headerContainer}>
+    <KeyboardAwareScrollView
+      style={styles.container}
+      resetScrollToCoords={{ x: 0, y: 0 }}
+      contentContainerStyle={styles.container}
+      enableOnAndroid={true}
+    >
+      <View style={styles.headerContainer}>
+        {userRole === 'admin' && (
           <Button title="+ Add New Item" onPress={() => setAddItemModalVisible(true)} />
-        </View>
-        {items.map((item) => (
-          <View key={item.id} style={styles.itemContainer}>
-            <Image source={{ uri: item.img }} style={styles.itemImage} />
-            <View style={styles.itemDetails}>
-              <Text style={styles.itemName}>{item.name}</Text>
-              <View style={styles.quantityContainer}>
-                <TouchableOpacity style={styles.circleButton} onPress={() => decrementQuantity(item.id, item.quantity)}>
-                  <Text style={styles.quantityButton}>-</Text>
-                </TouchableOpacity>
-                <TextInput
-                  style={styles.quantityInput}
-                  value={String(item.quantity)}
-                  keyboardType="numeric"
-                  onChangeText={(text) => updateQuantity(item.id, parseInt(text) || 0)}
-                />
-                <TouchableOpacity style={styles.circleButton} onPress={() => incrementQuantity(item.id, item.quantity)}>
-                  <Text style={styles.quantityButton}>+</Text>
-                </TouchableOpacity>
-              </View>
+        )}
+      </View>
+      {items.map((item) => (
+        <View key={item.id} style={styles.itemContainer}>
+          <Image source={{ uri: item.img }} style={styles.itemImage} />
+          <View style={styles.itemDetails}>
+            <Text style={styles.itemName}>{item.name}</Text>
+            <View style={styles.quantityContainer}>
+              <TouchableOpacity style={styles.circleButton} onPress={() => decrementQuantity(item.id, item.quantity)}>
+                <Text style={styles.quantityButton}>-</Text>
+              </TouchableOpacity>
+              <TextInput
+                style={styles.quantityInput}
+                value={String(item.quantity)}
+                keyboardType="numeric"
+                onChangeText={(text) => updateQuantity(item.id, parseInt(text) || 0)}
+              />
+              <TouchableOpacity style={styles.circleButton} onPress={() => incrementQuantity(item.id, item.quantity)}>
+                <Text style={styles.quantityButton}>+</Text>
+              </TouchableOpacity>
             </View>
+          </View>
+          {userRole === 'admin' && (
             <Menu>
               <MenuTrigger>
                 <Text style={styles.menuButton}>⋮</Text>
               </MenuTrigger>
               <MenuOptions>
                 <MenuOption onSelect={() => editItemDetails(item)} text="Edit " />
-      
                 <MenuOption onSelect={() => deleteItem(item.id, item.img)} text="Delete" />
               </MenuOptions>
             </Menu>
-          </View>
-        ))}
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => {
-            setModalVisible(!modalVisible);
-            setEditItem(null);
-            setItemName('');
-            setItemImageUri('');
-          }}
-        >
-          <View style={styles.modalView}>
-            <TextInput
-              placeholder="Item Name"
-              value={itemName}
-              onChangeText={setItemName}
-              style={styles.input}
+          )}
+        </View>
+      ))}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+          setEditItem(null);
+          setItemName('');
+          setItemImageUri('');
+        }}
+      >
+        <View style={styles.modalView}>
+          <TextInput
+            placeholder="Item Name"
+            value={itemName}
+            onChangeText={setItemName}
+            style={styles.input}
+          />
+          <TouchableOpacity onPress={selectItemImage}>
+            <Image
+              source={{ uri: itemImageUri || 'https://via.placeholder.com/150' }}
+              style={styles.image}
             />
-            <TouchableOpacity onPress={selectItemImage}>
-              <Image
-                source={{ uri: itemImageUri || 'https://via.placeholder.com/150' }}
-                style={styles.image}
-              />
-            </TouchableOpacity>
-            <View style={styles.buttonContainer}>
-              <Button title="Update Item" onPress={() => {
-                updateItem();
-                setModalVisible(false);
-                setItemName('');
-                setItemImageUri('');
-              }} />
-              <View style={styles.buttonSpacing} />
-              <Button title="Cancel" onPress={() => {
-                setModalVisible(false);
-                setEditItem(null);
-                setItemName('');
-                setItemImageUri('');
-              }} />
-            </View>
+          </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            <Button title="Update Item" onPress={() => {
+              updateItem();
+              setModalVisible(false);
+              setItemName('');
+              setItemImageUri('');
+            }} />
+            <View style={styles.buttonSpacing} />
+            <Button title="Cancel" onPress={() => {
+              setModalVisible(false);
+              setEditItem(null);
+              setItemName('');
+              setItemImageUri('');
+            }} />
           </View>
-        </Modal>
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={addItemModalVisible}
-          onRequestClose={() => {
-            setAddItemModalVisible(!addItemModalVisible);
-            setItemName('');
-            setItemImageUri('');
-          }}
-        >
-          <View style={styles.modalView}>
-            <TextInput
-              placeholder="Item Name"
-              value={itemName}
-              onChangeText={setItemName}
-              style={styles.input}
+        </View>
+      </Modal>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={addItemModalVisible}
+        onRequestClose={() => {
+          setAddItemModalVisible(!addItemModalVisible);
+          setItemName('');
+          setItemImageUri('');
+        }}
+      >
+        <View style={styles.modalView}>
+          <TextInput
+            placeholder="Item Name"
+            value={itemName}
+            onChangeText={setItemName}
+            style={styles.input}
+          />
+          <TouchableOpacity onPress={selectItemImage}>
+            <Image
+              source={{ uri: itemImageUri || 'https://via.placeholder.com/150' }}
+              style={styles.image}
             />
-            <TouchableOpacity onPress={selectItemImage}>
-              <Image
-                source={{ uri: itemImageUri || 'https://via.placeholder.com/150' }}
-                style={styles.image}
-              />
-            </TouchableOpacity>
-            <View style={styles.buttonContainer}>
-              {loading ? (
-                <ActivityIndicator size="large" color="#0000ff" />
-              ) : (
-                <>
-                  <Button title="Add Item" onPress={addItem} />
-                  <View style={styles.buttonSpacing} />
-                  <Button title="Cancel" onPress={() => {
-                    setAddItemModalVisible(false);
-                    setItemName('');
-                    setItemImageUri('');
-                  }} />
-                </>
-              )}
-            </View>
+          </TouchableOpacity>
+          <View style={styles.buttonContainer}>
+            {loading ? (
+              <ActivityIndicator size="large" color="#0000ff" />
+            ) : (
+              <>
+                <Button title="Add Item" onPress={addItem} />
+                <View style={styles.buttonSpacing} />
+                <Button title="Cancel" onPress={() => {
+                  setAddItemModalVisible(false);
+                  setItemName('');
+                  setItemImageUri('');
+                }} />
+              </>
+            )}
           </View>
-        </Modal>
-        {success && (
-          <View style={styles.successMessage}>
-            <Text style={styles.successText}>Item added successfully!</Text>
-          </View>
-        )}
-      </KeyboardAwareScrollView>
-   // </MenuProvider>
+        </View>
+      </Modal>
+      {success && (
+        <View style={styles.successMessage}>
+          <Text style={styles.successText}>Item added successfully!</Text>
+        </View>
+      )}
+    </KeyboardAwareScrollView>
   );
 };
 
@@ -825,7 +840,6 @@ const styles = StyleSheet.create({
   successMessage: {
     position: 'absolute',
     top: 100, // Position it towards the top of the screen
-    
     left: 110,
     transform: [{ translateX: -50 }],
     backgroundColor: 'green',
@@ -837,7 +851,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     fontSize: 18,
-
   },
 });
 

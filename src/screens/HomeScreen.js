@@ -411,6 +411,7 @@ import { Menu, MenuOptions, MenuOption, MenuTrigger } from 'react-native-popup-m
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import UserSettingsScreen from './UserSettingsScreen';
 
 const HomeScreen = ({ navigation }) => {
   const [teams, setTeams] = useState([]);
@@ -633,6 +634,8 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
+<Button title="Settings" onPress={() => navigation.navigate('UserSettingsScreen')} />
+
       <Text style={styles.title}>MY TEAMS</Text>
       <FlatList
         data={teams}
