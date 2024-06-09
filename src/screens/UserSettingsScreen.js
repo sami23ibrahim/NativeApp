@@ -1,8 +1,6 @@
-
-
-// import React, { useState, useEffect } from 'react';
+// import React, { useState } from 'react';
 // import { View, Text, TextInput, Button, Alert, StyleSheet, Modal } from 'react-native';
-// import { getAuth, updateEmail, updatePassword, deleteUser, EmailAuthProvider, reauthenticateWithCredential, sendEmailVerification, onAuthStateChanged, signOut } from 'firebase/auth';
+// import { getAuth, updateEmail, updatePassword, deleteUser, EmailAuthProvider, reauthenticateWithCredential, signOut } from 'firebase/auth';
 
 // const UserSettingsScreen = ({ navigation }) => {
 //   const [newEmail, setNewEmail] = useState('');
@@ -10,18 +8,7 @@
 //   const [currentPassword, setCurrentPassword] = useState('');
 //   const [modalVisible, setModalVisible] = useState(false);
 //   const [action, setAction] = useState('');
-//   const [verificationSent, setVerificationSent] = useState(false);
 //   const auth = getAuth();
-
-//   useEffect(() => {
-//     const unsubscribe = onAuthStateChanged(auth, (user) => {
-//       if (user && user.emailVerified && verificationSent) {
-//         updateEmailAfterVerification();
-//       }
-//     });
-
-//     return () => unsubscribe();
-//   }, [auth, verificationSent]);
 
 //   const handleReauthenticate = async () => {
 //     try {
@@ -30,7 +17,7 @@
 //       await reauthenticateWithCredential(user, credential);
 //       console.log('Reauthentication successful');
 //       if (action === 'email') {
-//         sendVerificationToNewEmail();
+//         await updateEmailAfterReauthentication();
 //       } else if (action === 'password') {
 //         handlePasswordChange();
 //       } else if (action === 'delete') {
@@ -39,23 +26,6 @@
 //       setModalVisible(false);
 //     } catch (error) {
 //       console.error('Reauthentication Error:', error);
-//       Alert.alert('Error', error.message);
-//     }
-//   };
-
-//   const sendVerificationToNewEmail = async () => {
-//     try {
-//       const user = auth.currentUser;
-//       const actionCodeSettings = {
-//         url: 'https://fir-test-ddf72.firebaseapp.com', // Ensure this is an authorized domain
-//         handleCodeInApp: true,
-//       };
-//       await sendEmailVerification(user, actionCodeSettings);
-//       console.log('Verification email sent to:', user.email);
-//       setVerificationSent(true);
-//       Alert.alert('Verification Email Sent', 'Please verify your new email address by clicking the link sent to it.');
-//     } catch (error) {
-//       console.error('Send Verification Email Error:', error);
 //       Alert.alert('Error', error.message);
 //     }
 //   };
@@ -74,6 +44,20 @@
 //     setModalVisible(true);
 //   };
 
+//   const updateEmailAfterReauthentication = async () => {
+//     try {
+//       const user = auth.currentUser;
+//       await updateEmail(user, newEmail);
+//       console.log('Email updated successfully');
+//       await signOut(auth);
+//       navigation.navigate('Login'); // Adjust this line to navigate to your sign-in screen
+//       Alert.alert('Success', 'Email updated successfully. Please sign in with your new email.');
+//     } catch (error) {
+//       console.error('Email Update Error:', error);
+//       Alert.alert('Error', error.message);
+//     }
+//   };
+
 //   const handlePasswordChange = async () => {
 //     if (newPassword.trim() === '') {
 //       Alert.alert('Error', 'Please enter a valid password.');
@@ -107,22 +91,6 @@
 //         setAction('delete');
 //         setModalVisible(true);
 //       }
-//     }
-//   };
-
-//   const updateEmailAfterVerification = async () => {
-//     try {
-//       const user = auth.currentUser;
-//       console.log('Updating email to:', newEmail);
-//       await updateEmail(user, newEmail);
-//       console.log('Email updated successfully');
-//       setVerificationSent(false);
-//       await signOut(auth);
-//       navigation.navigate('Login'); // Adjust this line to navigate to your sign-in screen
-//       Alert.alert('Success', 'Email updated successfully. Please sign in with your new email.');
-//     } catch (error) {
-//       console.error('Email Update Error:', error);
-//       Alert.alert('Error', error.message);
 //     }
 //   };
 
@@ -164,13 +132,6 @@
 //           <Button title="Reauthenticate" onPress={handleReauthenticate} />
 //         </View>
 //       </Modal>
-
-//       {verificationSent && (
-//         <View style={styles.verificationContainer}>
-//           <Text style={styles.verificationText}>A verification email has been sent to {newEmail}. Please verify your new email address by clicking the link sent to it.</Text>
-//           <Button title="I have verified my email" onPress={updateEmailAfterVerification} />
-//         </View>
-//       )}
 //     </View>
 //   );
 // };
@@ -210,16 +171,6 @@
 //     marginBottom: 15,
 //     textAlign: 'center',
 //   },
-//   verificationContainer: {
-//     padding: 20,
-//     backgroundColor: '#e7f4ff',
-//     borderRadius: 5,
-//     marginTop: 20,
-//   },
-//   verificationText: {
-//     marginBottom: 10,
-//     textAlign: 'center',
-//   },
 // });
 
 // export default UserSettingsScreen;
@@ -228,29 +179,24 @@
 
 
 
-
-// import React, { useState, useEffect } from 'react';
+// import React, { useState } from 'react';
 // import { View, Text, TextInput, Button, Alert, StyleSheet, Modal } from 'react-native';
-// import { getAuth, updateEmail, updatePassword, deleteUser, EmailAuthProvider, reauthenticateWithCredential, sendEmailVerification, onAuthStateChanged, signOut } from 'firebase/auth';
+// import { getAuth, updateEmail, updatePassword, deleteUser, EmailAuthProvider, reauthenticateWithCredential, signOut } from 'firebase/auth';
+// import { FIREBASE_AUTH, db } from '../config/firebase'; // Import the db instance
+// import { doc, updateDoc } from 'firebase/firestore';
 
 // const UserSettingsScreen = ({ navigation }) => {
 //   const [newEmail, setNewEmail] = useState('');
+//   const [confirmNewEmail, setConfirmNewEmail] = useState('');
 //   const [newPassword, setNewPassword] = useState('');
+//   const [confirmNewPassword, setConfirmNewPassword] = useState('');
 //   const [currentPassword, setCurrentPassword] = useState('');
 //   const [modalVisible, setModalVisible] = useState(false);
 //   const [action, setAction] = useState('');
-//   const [verificationSent, setVerificationSent] = useState(false);
+//   const [emailMismatch, setEmailMismatch] = useState(false);
+//   const [emailSameAsCurrent, setEmailSameAsCurrent] = useState(false);
+//   const [passwordMismatch, setPasswordMismatch] = useState(false);
 //   const auth = getAuth();
-
-//   useEffect(() => {
-//     const unsubscribe = onAuthStateChanged(auth, (user) => {
-//       if (user && user.emailVerified && verificationSent) {
-//         updateEmailAfterVerification();
-//       }
-//     });
-
-//     return () => unsubscribe();
-//   }, [auth, verificationSent]);
 
 //   const handleReauthenticate = async () => {
 //     try {
@@ -259,12 +205,9 @@
 //       await reauthenticateWithCredential(user, credential);
 //       console.log('Reauthentication successful');
 //       if (action === 'email') {
-//         await notifyCurrentEmail(user.email, newEmail);
-//         await sendVerificationToNewEmail();
-//         await signOut(auth);
-//         navigation.navigate('Login');
+//         await updateEmailAfterReauthentication();
 //       } else if (action === 'password') {
-//         handlePasswordChange();
+//         await updatePasswordAfterReauthentication();
 //       } else if (action === 'delete') {
 //         handleAccountDeletion();
 //       }
@@ -275,49 +218,66 @@
 //     }
 //   };
 
-//   const sendVerificationToNewEmail = async () => {
-//     try {
-//       const user = auth.currentUser;
-//       const actionCodeSettings = {
-//         url: 'https://fir-test-ddf72.firebaseapp.com', // Ensure this is an authorized domain
-//         handleCodeInApp: true,
-//       };
-//       await sendEmailVerification(user, actionCodeSettings);
-//       console.log('Verification email sent to:', newEmail);
-//       setVerificationSent(true);
-//       Alert.alert('Verification Email Sent', 'Please verify your new email address by clicking the link sent to it.');
-//     } catch (error) {
-//       console.error('Send Verification Email Error:', error);
-//       Alert.alert('Error', error.message);
-//     }
-//   };
-
-//   const notifyCurrentEmail = async (currentEmail, newEmail) => {
-//     // Here you would integrate with an email service to notify the current email
-//     // This is a placeholder for sending the notification email
-//     console.log(`Notify current email: ${currentEmail} about email change to: ${newEmail}`);
-//     // Use your backend service to send an email with the link to recover the email
-//   };
-
 //   const handleEmailChange = () => {
-//     if (newEmail.trim() === '') {
+//     const user = auth.currentUser;
+//     if (newEmail.trim() === '' || confirmNewEmail.trim() === '') {
 //       Alert.alert('Error', 'Please enter a valid email.');
 //       return;
 //     }
-//     const user = auth.currentUser;
-//     if (user.email === newEmail.trim()) {
-//       Alert.alert('Error', 'The new email is the same as the current email.');
+//     if (newEmail !== confirmNewEmail) {
+//       setEmailMismatch(true);
+//       Alert.alert('Error', 'The email addresses do not match.');
 //       return;
 //     }
+//     if (newEmail === user.email) {
+//       setEmailSameAsCurrent(true);
+//       Alert.alert('Error', 'This email is already in use for this account.');
+//       return;
+//     }
+//     setEmailMismatch(false);
+//     setEmailSameAsCurrent(false);
 //     setAction('email');
 //     setModalVisible(true);
 //   };
 
-//   const handlePasswordChange = async () => {
-//     if (newPassword.trim() === '') {
+//   const updateEmailAfterReauthentication = async () => {
+//     try {
+//       const user = auth.currentUser;
+//       await updateEmail(user, newEmail);
+//       console.log('Email updated successfully in Authentication');
+      
+//       // Update the email in Firestore
+//       const userDocRef = doc(db, 'users', user.uid);
+//       await updateDoc(userDocRef, {
+//         email: newEmail,
+//       });
+//       console.log('Email updated successfully in Firestore');
+      
+//       await signOut(auth);
+//       navigation.navigate('Login'); // Adjust this line to navigate to your sign-in screen
+//       Alert.alert('Success', 'Email updated successfully. Please sign in with your new email.');
+//     } catch (error) {
+//       console.error('Email Update Error:', error);
+//       Alert.alert('Error', error.message);
+//     }
+//   };
+
+//   const handlePasswordChange = () => {
+//     if (newPassword.trim() === '' || confirmNewPassword.trim() === '') {
 //       Alert.alert('Error', 'Please enter a valid password.');
 //       return;
 //     }
+//     if (newPassword !== confirmNewPassword) {
+//       setPasswordMismatch(true);
+//       Alert.alert('Error', 'The passwords do not match.');
+//       return;
+//     }
+//     setPasswordMismatch(false);
+//     setAction('password');
+//     setModalVisible(true);
+//   };
+
+//   const updatePasswordAfterReauthentication = async () => {
 //     try {
 //       const user = auth.currentUser;
 //       await updatePassword(user, newPassword);
@@ -326,10 +286,6 @@
 //     } catch (error) {
 //       console.error('Password Change Error:', error);
 //       Alert.alert('Error', error.message);
-//       if (error.code === 'auth/requires-recent-login') {
-//         setAction('password');
-//         setModalVisible(true);
-//       }
 //     }
 //   };
 
@@ -349,30 +305,29 @@
 //     }
 //   };
 
-//   const updateEmailAfterVerification = async () => {
-//     try {
-//       const user = auth.currentUser;
-//       console.log('Updating email to:', newEmail);
-//       await updateEmail(user, newEmail);
-//       console.log('Email updated successfully');
-//       setVerificationSent(false);
-//       Alert.alert('Success', 'Email updated successfully.');
-//     } catch (error) {
-//       console.error('Email Update Error:', error);
-//       Alert.alert('Error', error.message);
-//     }
-//   };
-
 //   return (
 //     <View style={styles.container}>
-//       <Text style={styles.title}>User Settings</Text>
+//       <Text style={styles.title}>Update Email</Text>
 //       <TextInput
 //         placeholder="New Email"
 //         value={newEmail}
 //         onChangeText={setNewEmail}
 //         style={styles.input}
 //       />
+//       <TextInput
+//         placeholder="Confirm New Email"
+//         value={confirmNewEmail}
+//         onChangeText={setConfirmNewEmail}
+//         style={[styles.input, (emailMismatch || emailSameAsCurrent) && { borderColor: 'red' }]}
+//       />
 //       <Button title="Update Email" onPress={handleEmailChange} />
+//       {emailMismatch && <Text style={styles.errorText}>The email addresses do not match.</Text>}
+//       {emailSameAsCurrent && <Text style={styles.errorText}>This email is already in use for this account.</Text>}
+//       <Text style={styles.warningText}>
+//         Make sure to enter a correct email address because after confirmation you will lose access from the previous email and will have access only from the newly entered email.
+//       </Text>
+//       <Text style={styles.title}>Update Password</Text>
+
 //       <TextInput
 //         placeholder="New Password"
 //         value={newPassword}
@@ -380,7 +335,17 @@
 //         secureTextEntry
 //         style={styles.input}
 //       />
+//       <TextInput
+//         placeholder="Confirm New Password"
+//         value={confirmNewPassword}
+//         onChangeText={setConfirmNewPassword}
+//         secureTextEntry
+//         style={[styles.input, passwordMismatch && { borderColor: 'red' }]}
+//       />
 //       <Button title="Update Password" onPress={handlePasswordChange} />
+//       {passwordMismatch && <Text style={styles.errorText}>The passwords do not match.</Text>}
+//       <Text style={styles.title}>Delete Account</Text>
+
 //       <Button title="Delete Account" onPress={handleAccountDeletion} color="red" />
 
 //       <Modal
@@ -401,13 +366,6 @@
 //           <Button title="Reauthenticate" onPress={handleReauthenticate} />
 //         </View>
 //       </Modal>
-
-//       {verificationSent && (
-//         <View style={styles.verificationContainer}>
-//           <Text style={styles.verificationText}>A verification email has been sent to {newEmail}. Please verify your new email address by clicking the link sent to it.</Text>
-//           <Button title="I have verified my email" onPress={updateEmailAfterVerification} />
-//         </View>
-//       )}
 //     </View>
 //   );
 // };
@@ -428,6 +386,15 @@
 //     marginBottom: 20,
 //     borderRadius: 5,
 //   },
+//   warningText: {
+//     color: 'red',
+//     marginBottom: 20,
+//     textAlign: 'center',
+//   },
+//   errorText: {
+//     color: 'red',
+//     marginBottom: 20,
+//   },
 //   modalView: {
 //     margin: 20,
 //     backgroundColor: 'white',
@@ -447,32 +414,40 @@
 //     marginBottom: 15,
 //     textAlign: 'center',
 //   },
-//   verificationContainer: {
-//     padding: 20,
-//     backgroundColor: '#e7f4ff',
-//     borderRadius: 5,
-//     marginTop: 20,
-//   },
-//   verificationText: {
-//     marginBottom: 10,
-//     textAlign: 'center',
-//   },
 // });
 
 // export default UserSettingsScreen;
 
 
 
-// UserSettingsScreen.js
-import React from 'react';
-import { View, Text } from 'react-native';
-import EmailChangeComponent from '../components/EmailChangeComponent';
 
-export default function UserSettingsScreen() {
+
+
+
+
+// src/screens/UserSettingsScreen.js
+
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
+import UpdateEmail from '../components/UpdateEmail';
+import ChangePassword from '../components/ChangePassword';
+import DeleteAccount from '../components/DeleteAccount';
+
+const UserSettingsScreen = ({ navigation }) => {
   return (
-    <View>
-      <Text>User Settings</Text>
-      <EmailChangeComponent />
+    <View style={styles.container}>
+      <UpdateEmail navigation={navigation} />
+      <ChangePassword />
+      <DeleteAccount navigation={navigation} />
     </View>
   );
-}
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+  },
+});
+
+export default UserSettingsScreen;

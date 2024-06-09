@@ -170,6 +170,9 @@ const Login = ({ navigation }) => {
             <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
               <Text style={styles.signupText}>Create account</Text>
             </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('PasswordReset')}>
+              <Text style={styles.signupText}>forgot your password?</Text>
+            </TouchableOpacity>
           </>
         )}
       </KeyboardAvoidingView>

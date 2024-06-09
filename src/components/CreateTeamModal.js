@@ -371,7 +371,7 @@ const CreateTeamModal = ({ setVisible, refreshTeams }) => {
       await updateDoc(doc(firestore, 'users', user.uid), {
         teams: arrayUnion({
           teamId: teamRef.id,
-          name: teamName,
+        //  name: teamName,
          // role: 'owner',
           uid: user.uid
         })

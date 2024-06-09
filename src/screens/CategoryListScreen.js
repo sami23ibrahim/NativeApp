@@ -792,7 +792,7 @@ const CategoryListScreen = ({ navigation }) => {
   const user = FIREBASE_AUTH.currentUser;
 
   useEffect(() => {
-    navigation.setOptions({ title: `Team "${teamName.toUpperCase()}"` }); // Set the header title to the team name
+    navigation.setOptions({ title: `"${teamName.toUpperCase()}"` }); // Set the header title to the team name
 
     fetchCategoriesAndRole();
   }, [teamId, teamName]); // Add teamName to the dependency array
