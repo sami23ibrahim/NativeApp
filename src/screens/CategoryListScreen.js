@@ -769,9 +769,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Dimensions, Modal, TextInput, Button, Alert, ActivityIndicator, TouchableWithoutFeedback } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { getDocs, collection, addDoc, deleteDoc, doc, updateDoc, query, where, getDoc } from 'firebase/firestore';
+import { getDocs, collection, addDoc, deleteDoc, doc,getFirestore, updateDoc, query, where, getDoc } from 'firebase/firestore';
 import { storage, db } from '../config/firebase';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL,deleteObject } from 'firebase/storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { FIREBASE_AUTH } from '../config/firebase';
@@ -898,17 +898,27 @@ const CategoryListScreen = ({ navigation }) => {
       Alert.alert('Missing information', 'Please provide a name.');
       return;
     }
-
+  
     setLoading(true);
     try {
       let imageUrl = selectedCategory.img;
       if (imageUri && imageUri !== selectedCategory.img) {
+        // Upload the new image
         imageUrl = await uploadImage(imageUri);
+  
+        // Delete the old image
+        if (selectedCategory.img) {
+          const oldImageRef = ref(storage, selectedCategory.img);
+          await deleteObject(oldImageRef);
+        }
       }
+  
+      // Update the category document with the new image URL
       await updateDoc(doc(db, 'categories', selectedCategory.id), {
         name: categoryName,
         img: imageUrl,
       });
+  
       Alert.alert('Category updated!', 'Your category has been updated successfully.');
       setSelectedCategory(null);
       setCategoryName('');
@@ -922,17 +932,46 @@ const CategoryListScreen = ({ navigation }) => {
       setLoading(false);
     }
   };
+  
 
   const deleteCategory = async (categoryId) => {
     try {
-      await deleteDoc(doc(db, 'categories', categoryId));
-      Alert.alert('Category deleted!', 'Your category has been deleted successfully.');
-      fetchCategoriesAndRole();
+      const categoryRef = doc(db, 'categories', categoryId);
+      const categoryDoc = await getDoc(categoryRef);
+      if (categoryDoc.exists()) {
+        const categoryData = categoryDoc.data();
+  
+        // Delete associated items and their images
+        const itemsQuerySnapshot = await getDocs(collection(db, 'categories', categoryId, 'items'));
+        for (const itemDoc of itemsQuerySnapshot.docs) {
+          const itemData = itemDoc.data();
+          if (itemData.img) {
+            const imgRef = ref(storage, itemData.img);
+            await deleteObject(imgRef);
+          }
+          await deleteDoc(doc(db, 'categories', categoryId, 'items', itemDoc.id));
+        }
+  
+        // Delete category image
+        if (categoryData.img) {
+          const categoryImgRef = ref(storage, categoryData.img);
+          await deleteObject(categoryImgRef);
+        }
+  
+        // Delete the category document
+        await deleteDoc(categoryRef);
+  
+        Alert.alert('Category deleted!', 'Your category and its items have been deleted successfully.');
+        fetchCategoriesAndRole();
+      } else {
+        Alert.alert('Error', 'Category not found.');
+      }
     } catch (error) {
       console.error('Error deleting category:', error);
       Alert.alert('Error', `There was an error deleting your category: ${error.message}`);
     }
   };
+  
 
   const openMenu = (category) => {
     setMenuCategory(category);

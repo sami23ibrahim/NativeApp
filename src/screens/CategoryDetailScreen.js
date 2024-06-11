@@ -1026,17 +1026,25 @@ const CategoryDetailScreen = () => {
     setItemImageUri(item.img);
     setModalVisible(true);
   };
-
+  
   const updateItem = async () => {
     if (editItem) {
       try {
         let updatedImageUrl = editItem.img;
-        if (itemImageUri !== editItem.img) {
+        if (itemImageUri && itemImageUri !== editItem.img) {
+          // Upload the new image
           updatedImageUrl = await uploadImage(itemImageUri);
+  
+          // Delete the old image
+          if (editItem.img) {
+            const oldImageRef = ref(storage, editItem.img);
+            await deleteObject(oldImageRef);
+          }
         }
-
+  
         const itemRef = doc(db, `categories/${categoryId}/items`, editItem.id);
         await updateDoc(itemRef, { name: itemName, img: updatedImageUrl });
+  
         fetchItemsAndRole();
         setModalVisible(false);
         setEditItem(null);
@@ -1048,7 +1056,7 @@ const CategoryDetailScreen = () => {
       }
     }
   };
-
+  
   return (
     <KeyboardAwareScrollView
       style={styles.container}

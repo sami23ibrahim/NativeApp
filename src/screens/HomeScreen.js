@@ -1624,17 +1624,18 @@
 // export default HomeScreen;
 
 
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Button, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { getAuth, signOut } from 'firebase/auth';
-import { getFirestore, doc, getDoc, updateDoc, arrayRemove, deleteDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, updateDoc, arrayRemove, deleteDoc, collection, getDocs } from 'firebase/firestore';
 import { FIREBASE_AUTH, FIREBASE_FIRESTORE, storage } from '../config/firebase';
 import CreateTeamModal from '../components/CreateTeamModal';
 import JoinTeamModal from '../components/JoinTeamModal';
 import { useNavigation } from '@react-navigation/native';
 import { Menu, MenuOptions, MenuOption, MenuTrigger } from 'react-native-popup-menu';
 import * as ImagePicker from 'expo-image-picker';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL,deleteObject } from 'firebase/storage';
 import { MaterialCommunityIcons } from 'react-native-vector-icons';
 import UserSettingsScreen from './UserSettingsScreen';
 
@@ -1778,12 +1779,27 @@ const HomeScreen = ({ navigation }) => {
     }
     setLoading(true);
     try {
-      const imageUrl = await uploadImage(imageUri);
       const teamRef = doc(firestore, 'teams', editTeam.id);
+      const teamDoc = await getDoc(teamRef);
+  
+      // Get the current image URL
+      const currentImageUrl = teamDoc.data().imageUrl;
+  
+      // Upload the new image
+      const imageUrl = await uploadImage(imageUri);
+  
+      // Delete the old image if it exists
+      if (currentImageUrl) {
+        const oldImageRef = ref(storage, currentImageUrl);
+        await deleteObject(oldImageRef);
+      }
+  
+      // Update the team document with the new image URL
       await updateDoc(teamRef, {
         name: teamName,
         imageUrl: imageUrl,
       });
+  
       Alert.alert('Team updated successfully!');
       setEditTeam(null);
       setTeamName('');
@@ -1797,6 +1813,59 @@ const HomeScreen = ({ navigation }) => {
       setLoading(false);
     }
   };
+  
+
+  // const handleDeleteTeam = async (teamId) => {
+  //   try {
+  //     const teamRef = doc(firestore, 'teams', teamId);
+  //     const teamDoc = await getDoc(teamRef);
+  //     if (teamDoc.exists()) {
+  //       const teamData = teamDoc.data();
+  
+  //       // Remove the team from all members' team lists
+  //       for (const member of teamData.members) {
+  //         const memberRef = doc(firestore, 'users', member.uid);
+  //         const memberDoc = await getDoc(memberRef);
+  //         if (memberDoc.exists()) {
+  //           const memberData = memberDoc.data();
+  //           const updatedTeams = memberData.teams.filter(team => team.teamId !== teamId);
+  //           await updateDoc(memberRef, { teams: updatedTeams });
+  //         }
+  //       }
+  
+  //       // Delete associated categories and items
+  //       const categoriesQuerySnapshot = await getDocs(collection(firestore, 'categories'));
+  //       for (const categoryDoc of categoriesQuerySnapshot.docs) {
+  //         const categoryData = categoryDoc.data();
+  //         if (categoryData.teamId === teamId) {
+  //           const itemsQuerySnapshot = await getDocs(collection(firestore, 'categories', categoryDoc.id, 'items'));
+  //           for (const itemDoc of itemsQuerySnapshot.docs) {
+  //             // Delete item document and associated image
+  //             await deleteDoc(doc(firestore, 'categories', categoryDoc.id, 'items', itemDoc.id));
+  //             const itemData = itemDoc.data();
+  //             if (itemData.img) {
+  //               const imgRef = ref(storage, itemData.img);
+  //               await deleteObject(imgRef);
+  //             }
+  //           }
+  //           // Delete category document
+  //           await deleteDoc(doc(firestore, 'categories', categoryDoc.id));
+  //         }
+  //       }
+  
+  //       // Delete the team document
+  //       await deleteDoc(teamRef);
+  //       Alert.alert('Team deleted successfully!');
+  //       refreshTeams();
+  //     } else {
+  //       Alert.alert('Error', 'Team not found.');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error deleting team: ', error);
+  //     Alert.alert('Error', 'Failed to delete team.');
+  //   }
+  // };
+  
 
   const handleDeleteTeam = async (teamId) => {
     try {
@@ -1804,7 +1873,7 @@ const HomeScreen = ({ navigation }) => {
       const teamDoc = await getDoc(teamRef);
       if (teamDoc.exists()) {
         const teamData = teamDoc.data();
-
+  
         // Remove the team from all members' team lists
         for (const member of teamData.members) {
           const memberRef = doc(firestore, 'users', member.uid);
@@ -1815,9 +1884,38 @@ const HomeScreen = ({ navigation }) => {
             await updateDoc(memberRef, { teams: updatedTeams });
           }
         }
-
-        // Delete the team document
+  
+        // Delete associated categories and items
+        const categoriesQuerySnapshot = await getDocs(collection(firestore, 'categories'));
+        for (const categoryDoc of categoriesQuerySnapshot.docs) {
+          const categoryData = categoryDoc.data();
+          if (categoryData.teamId === teamId) {
+            const itemsQuerySnapshot = await getDocs(collection(firestore, 'categories', categoryDoc.id, 'items'));
+            for (const itemDoc of itemsQuerySnapshot.docs) {
+              // Delete item document and associated image
+              await deleteDoc(doc(firestore, 'categories', categoryDoc.id, 'items', itemDoc.id));
+              const itemData = itemDoc.data();
+              if (itemData.img) {
+                const imgRef = ref(storage, itemData.img);
+                await deleteObject(imgRef);
+              }
+            }
+            // Delete category document and associated image
+            if (categoryData.img) {
+              const categoryImgRef = ref(storage, categoryData.img);
+              await deleteObject(categoryImgRef);
+            }
+            await deleteDoc(doc(firestore, 'categories', categoryDoc.id));
+          }
+        }
+  
+        // Delete team document and associated image
+        if (teamData.imageUrl) {
+          const teamImgRef = ref(storage, teamData.imageUrl);
+          await deleteObject(teamImgRef);
+        }
         await deleteDoc(teamRef);
+  
         Alert.alert('Team deleted successfully!');
         refreshTeams();
       } else {
@@ -1828,6 +1926,8 @@ const HomeScreen = ({ navigation }) => {
       Alert.alert('Error', 'Failed to delete team.');
     }
   };
+  
+  
 
   const handleLeaveTeam = async (teamId) => {
     try {

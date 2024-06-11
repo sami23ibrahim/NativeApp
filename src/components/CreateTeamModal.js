@@ -351,6 +351,7 @@ const CreateTeamModal = ({ setVisible, refreshTeams }) => {
       Alert.alert('Missing information', 'Please provide a team name and select an image.');
       return;
     }
+    
     try {
       const imageUrl = await uploadImage(imageUri);
       
