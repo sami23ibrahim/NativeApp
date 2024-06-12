@@ -249,7 +249,7 @@ const ManageTeamScreen = ({ route }) => {
       {isOwner && !item.isOwner && (
         <Menu>
           <MenuTrigger>
-            <MaterialCommunityIcons name="dots-vertical" size={24} color="black" />
+            <MaterialCommunityIcons name="dots-vertical" size={24} color="white" />
           </MenuTrigger>
           <MenuOptions>
             <MenuOption onSelect={() => toggleAdminStatus(item)} text={item.admin ? 'Remove Admin' : 'Make Admin'} />
@@ -275,11 +275,11 @@ const ManageTeamScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: 20,  backgroundColor: '#9cacbc',
   },
   title: {
     fontSize: 24,
-    marginBottom: 20,
+    marginBottom: 20, color: 'white',
   },
   memberItem: {
     flexDirection: 'row',
@@ -289,14 +289,14 @@ const styles = StyleSheet.create({
     borderBottomColor: '#ccc',
   },
   memberImage: {
-    width: 65,
-    height: 65,
+    width: 75,
+    height: 75,
     borderRadius: 90,
     marginRight: 25,
     marginBottom: 8,
   },
   memberInfo: {
-    flex: 1,
+    flex: 1, color: 'white',
   },
   nameContainer: {
     flexDirection: 'row',
@@ -305,13 +305,13 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 6,
+    marginTop: 6,   color: 'white',
   },
   memberRole: {
     fontSize: 16,
     marginTop: 0,
     marginBottom: 12,
-    color: 'green',
+    color: 'white',
   },
   icon: {
     marginLeft: 15,
