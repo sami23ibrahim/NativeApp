@@ -446,7 +446,7 @@ const UserSettingsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    padding: 20,backgroundColor: '#9cacbc',
   },
 });
 

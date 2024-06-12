@@ -78,7 +78,19 @@ export default function App() {
   return (
     <MenuProvider>
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="Login">
+      <Stack.Navigator
+          initialRouteName="Login"
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: '#9cacbc', // Background color of the header
+            },
+            headerTintColor: '#fff', // Color of the header text and back button
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+            headerShadowVisible: false, // Remove shadow
+          }}
+        >
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Signup" component={SignupScreen} />
           <Stack.Screen name="CategoryDetailScreen" component={CategoryDetailScreen} />

@@ -1076,7 +1076,7 @@ const CategoryListScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#9cacbc',
   },
   list: {
     justifyContent: 'space-between',

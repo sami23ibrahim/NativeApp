@@ -855,7 +855,6 @@
 // });
 
 // export default CategoryDetailScreen;
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TextInput, Button, TouchableOpacity, Alert, StyleSheet, Modal, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -1026,25 +1025,26 @@ const CategoryDetailScreen = () => {
     setItemImageUri(item.img);
     setModalVisible(true);
   };
-  
+
   const updateItem = async () => {
     if (editItem) {
+      setLoading(true); // Set loading state to true
       try {
         let updatedImageUrl = editItem.img;
         if (itemImageUri && itemImageUri !== editItem.img) {
           // Upload the new image
           updatedImageUrl = await uploadImage(itemImageUri);
-  
+
           // Delete the old image
           if (editItem.img) {
             const oldImageRef = ref(storage, editItem.img);
             await deleteObject(oldImageRef);
           }
         }
-  
+
         const itemRef = doc(db, `categories/${categoryId}/items`, editItem.id);
         await updateDoc(itemRef, { name: itemName, img: updatedImageUrl });
-  
+
         fetchItemsAndRole();
         setModalVisible(false);
         setEditItem(null);
@@ -1053,10 +1053,12 @@ const CategoryDetailScreen = () => {
       } catch (error) {
         console.error('Error updating item:', error);
         Alert.alert('Error', 'There was an error updating your item.');
+      } finally {
+        setLoading(false); // Set loading state to false
       }
     }
   };
-  
+
   return (
     <KeyboardAwareScrollView
       style={styles.container}
@@ -1119,27 +1121,27 @@ const CategoryDetailScreen = () => {
             value={itemName}
             onChangeText={setItemName}
             style={styles.input}
+            editable={!loading} // Disable input while loading
           />
-          <TouchableOpacity onPress={selectItemImage}>
+          <TouchableOpacity onPress={selectItemImage} disabled={loading}>
             <Image
               source={{ uri: itemImageUri || 'https://via.placeholder.com/150' }}
               style={styles.image}
             />
           </TouchableOpacity>
           <View style={styles.buttonContainer}>
-            <Button title="Update Item" onPress={() => {
-              updateItem();
-              setModalVisible(false);
-              setItemName('');
-              setItemImageUri('');
-            }} />
+            {loading ? (
+              <ActivityIndicator size="large" color="#0000ff" />
+            ) : (
+              <Button title="Update Item" onPress={updateItem} />
+            )}
             <View style={styles.buttonSpacing} />
             <Button title="Cancel" onPress={() => {
               setModalVisible(false);
               setEditItem(null);
               setItemName('');
               setItemImageUri('');
-            }} />
+            }} disabled={loading} />
           </View>
         </View>
       </Modal>
@@ -1159,8 +1161,9 @@ const CategoryDetailScreen = () => {
             value={itemName}
             onChangeText={setItemName}
             style={styles.input}
+            editable={!loading} // Disable input while loading
           />
-          <TouchableOpacity onPress={selectItemImage}>
+          <TouchableOpacity onPress={selectItemImage} disabled={loading}>
             <Image
               source={{ uri: itemImageUri || 'https://via.placeholder.com/150' }}
               style={styles.image}
@@ -1195,7 +1198,7 @@ const CategoryDetailScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#9cacbc',
   },
   headerContainer: {
     padding: 20,
@@ -1212,10 +1215,10 @@ const styles = StyleSheet.create({
   itemContainer: {
     flexDirection: 'row',
     padding: 10,
-    borderRadius: 10,
-    backgroundColor: '#f9f9f9',
-    marginBottom: 10,
-    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: 'rgba(172, 188, 198, 0.63)',    marginBottom: 10,
+    alignItems: 'center', justifyContent: 'space-between',
+    width: '95%',  alignSelf: 'center', // Center the item container
   },
   itemImage: {
     width: 100,
