@@ -3427,7 +3427,7 @@ const HomeScreen = ({ navigation }) => {
       } catch (error) {
         console.error('Error fetching teams: ', error);
       } finally {
-        setTimeout(() => setLoadingTeams(false), 3000); // Ensure loading screen stays for at least 3 seconds
+        setTimeout(() => setLoadingTeams(false), 1000); // Ensure loading screen stays for at least 3 seconds
       }
     };
 
@@ -3980,3 +3980,6 @@ const styles = StyleSheet.create({
 
 
 export default HomeScreen;
+
+
+
