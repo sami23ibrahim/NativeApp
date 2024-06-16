@@ -1164,6 +1164,10 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     marginBottom: 90,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
   categoryContainer: {
     marginBottom: 16,
@@ -1172,6 +1176,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginHorizontal: 10,
     position: 'relative',
+    
   },
   categoryContent: {
     width: '100%',
@@ -1184,8 +1189,11 @@ const styles = StyleSheet.create({
     height: '85%',
     resizeMode: 'cover',
     borderRadius: 20,
-    shadowRadius: 4,
     elevation: 5,
+    shadowColor: 'black',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.95,
+    shadowRadius: 4,
   },
   categoryName: {
     textAlign: 'center',
