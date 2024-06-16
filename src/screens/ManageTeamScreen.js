@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 0,
     marginBottom: 12,
-    color: 'white',
+    color: '#aaf0c9',
   },
   icon: {
     marginLeft: 15,

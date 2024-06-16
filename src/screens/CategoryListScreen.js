@@ -766,15 +766,23 @@
 // export default CategoryListScreen;
 
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Dimensions, Modal, TextInput, Button, Alert, ActivityIndicator, TouchableWithoutFeedback } from 'react-native';
+
+
+
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Dimensions, Modal, TextInput, Button, Alert, ActivityIndicator, TouchableWithoutFeedback, Animated, Keyboard } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { getDocs, collection, addDoc, deleteDoc, doc,getFirestore, updateDoc, query, where, getDoc } from 'firebase/firestore';
+import { getDocs, collection, addDoc, deleteDoc, doc, updateDoc, query, where, getDoc } from 'firebase/firestore';
 import { storage, db } from '../config/firebase';
-import { ref, uploadBytesResumable, getDownloadURL,deleteObject } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { FIREBASE_AUTH } from '../config/firebase';
+import CategorySearchBar from '../components/CategorySearchBar';
+
+const HEADER_HEIGHT = 92;
+
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 
 const CategoryListScreen = ({ navigation }) => {
   const [categories, setCategories] = useState([]);
@@ -785,17 +793,20 @@ const CategoryListScreen = ({ navigation }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [menuCategory, setMenuCategory] = useState(null);
-  const [userRole, setUserRole] = useState(''); // To store the user's role
+  const [userRole, setUserRole] = useState('');
   const route = useRoute();
-  const { teamId, teamName } = route.params; // Get teamId and teamName from route params
+  const { teamId, teamName } = route.params;
   const numColumns = 2;
   const user = FIREBASE_AUTH.currentUser;
 
-  useEffect(() => {
-    navigation.setOptions({ title: `"${teamName.toUpperCase()}"` }); // Set the header title to the team name
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const flatListRef = useRef(null);
+  const searchBarRef = useRef(null);
 
+  useEffect(() => {
+    navigation.setOptions({ title: `"${teamName.toUpperCase()}"` });
     fetchCategoriesAndRole();
-  }, [teamId, teamName]); // Add teamName to the dependency array
+  }, [teamId, teamName]);
 
   const fetchCategoriesAndRole = async () => {
     const q = query(collection(db, 'categories'), where('teamId', '==', teamId));
@@ -806,7 +817,6 @@ const CategoryListScreen = ({ navigation }) => {
     }));
     setCategories(fetchedCategories);
 
-    // Fetch user role
     const teamDocRef = doc(db, 'teams', teamId);
     const teamDoc = await getDoc(teamDocRef);
     if (teamDoc.exists()) {
@@ -878,7 +888,7 @@ const CategoryListScreen = ({ navigation }) => {
       await addDoc(collection(db, 'categories'), {
         name: categoryName,
         img: imageUrl,
-        teamId: teamId, // Add teamId to category
+        teamId: teamId,
       });
       Alert.alert('Category added!', 'Your category has been added successfully.');
       setCategoryName('');
@@ -898,27 +908,23 @@ const CategoryListScreen = ({ navigation }) => {
       Alert.alert('Missing information', 'Please provide a name.');
       return;
     }
-  
+
     setLoading(true);
     try {
       let imageUrl = selectedCategory.img;
       if (imageUri && imageUri !== selectedCategory.img) {
-        // Upload the new image
         imageUrl = await uploadImage(imageUri);
-  
-        // Delete the old image
         if (selectedCategory.img) {
           const oldImageRef = ref(storage, selectedCategory.img);
           await deleteObject(oldImageRef);
         }
       }
-  
-      // Update the category document with the new image URL
+
       await updateDoc(doc(db, 'categories', selectedCategory.id), {
         name: categoryName,
         img: imageUrl,
       });
-  
+
       Alert.alert('Category updated!', 'Your category has been updated successfully.');
       setSelectedCategory(null);
       setCategoryName('');
@@ -932,7 +938,6 @@ const CategoryListScreen = ({ navigation }) => {
       setLoading(false);
     }
   };
-  
 
   const deleteCategory = async (categoryId) => {
     try {
@@ -940,8 +945,7 @@ const CategoryListScreen = ({ navigation }) => {
       const categoryDoc = await getDoc(categoryRef);
       if (categoryDoc.exists()) {
         const categoryData = categoryDoc.data();
-  
-        // Delete associated items and their images
+
         const itemsQuerySnapshot = await getDocs(collection(db, 'categories', categoryId, 'items'));
         for (const itemDoc of itemsQuerySnapshot.docs) {
           const itemData = itemDoc.data();
@@ -951,16 +955,14 @@ const CategoryListScreen = ({ navigation }) => {
           }
           await deleteDoc(doc(db, 'categories', categoryId, 'items', itemDoc.id));
         }
-  
-        // Delete category image
+
         if (categoryData.img) {
           const categoryImgRef = ref(storage, categoryData.img);
           await deleteObject(categoryImgRef);
         }
-  
-        // Delete the category document
+
         await deleteDoc(categoryRef);
-  
+
         Alert.alert('Category deleted!', 'Your category and its items have been deleted successfully.');
         fetchCategoriesAndRole();
       } else {
@@ -971,7 +973,6 @@ const CategoryListScreen = ({ navigation }) => {
       Alert.alert('Error', `There was an error deleting your category: ${error.message}`);
     }
   };
-  
 
   const openMenu = (category) => {
     setMenuCategory(category);
@@ -991,6 +992,25 @@ const CategoryListScreen = ({ navigation }) => {
     closeMenu();
   };
 
+  const handleItemSelect = (selectedCategory) => {
+    const index = categories.findIndex(category => category.id === selectedCategory.id);
+    const adjustedIndex = Math.floor(index / numColumns);
+    console.log('Selected Category:', selectedCategory);
+    console.log('Calculated Index:', adjustedIndex);
+    console.log('Total Categories:', categories.length);
+
+    if (flatListRef.current && adjustedIndex >= 0) {
+      flatListRef.current.scrollToIndex({ index: adjustedIndex, animated: true });
+    } else {
+      console.warn('Index out of bounds:', adjustedIndex);
+    }
+  };
+
+  const handleScroll = () => {
+    searchBarRef.current?.clearInput();
+    Keyboard.dismiss();
+  };
+
   const renderCategoryItem = ({ item }) => {
     const screenWidth = Dimensions.get('window').width;
     const itemWidth = (screenWidth - 60) / numColumns;
@@ -1003,7 +1023,7 @@ const CategoryListScreen = ({ navigation }) => {
         </TouchableOpacity>
         {userRole === 'admin' && (
           <TouchableOpacity onPress={() => openMenu(item)} style={styles.menuButton}>
-            <MaterialIcons name="more-vert" size={30} color="black" />
+            <MaterialIcons name="more-vert" size={30} color="white" />
           </TouchableOpacity>
         )}
         {menuVisible && menuCategory && menuCategory.id === item.id && (
@@ -1020,20 +1040,54 @@ const CategoryListScreen = ({ navigation }) => {
     );
   };
 
+  const headerTranslateY = scrollY.interpolate({
+    inputRange: [0, HEADER_HEIGHT],
+    outputRange: [0, -HEADER_HEIGHT],
+    extrapolate: 'clamp',
+  });
+
   return (
     <TouchableWithoutFeedback onPress={closeMenu}>
       <View style={styles.container}>
-        <FlatList
-          data={categories}
-          keyExtractor={(item) => item.id}
-          renderItem={renderCategoryItem}
-          numColumns={numColumns}
-          contentContainerStyle={styles.list}
-        />
+        <Animated.View style={[styles.header, { transform: [{ translateY: headerTranslateY }] }]}>
+          <Text style={styles.teamName}>{teamName}</Text>
+          {categories.length > 0 && <CategorySearchBar ref={searchBarRef} items={categories} onSelect={handleItemSelect} />}
+        </Animated.View>
+        <Spacer height={80} />
+        {categories.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Image source={{ uri: 'https://via.placeholder.com/300' }} style={styles.emptyImage} />
+          </View>
+        ) : (
+          <AnimatedFlatList
+            ref={flatListRef}
+            data={categories}
+            keyExtractor={(item) => item.id}
+            renderItem={renderCategoryItem}
+            numColumns={numColumns}
+            initialNumToRender={categories.length}
+            maxToRenderPerBatch={categories.length}
+            contentContainerStyle={styles.list}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+              { useNativeDriver: true, listener: handleScroll }
+            )}
+            onScrollToIndexFailed={(info) => {
+              console.warn('scrollToIndex failed', info);
+              const wait = new Promise(resolve => setTimeout(resolve, 500));
+              wait.then(() => {
+                flatListRef.current?.scrollToIndex({
+                  index: info.index,
+                  animated: true,
+                });
+              });
+            }}
+          />
+        )}
         <Button title="Manage Team" onPress={() => navigation.navigate('ManageTeam', { teamId, teamName })} />
         {userRole === 'admin' && (
           <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
-            <Text style={styles.addButtonText}>+ Add New Category</Text>
+            <Text style={styles.addButtonText}>+</Text>
           </TouchableOpacity>
         )}
         <Modal
@@ -1073,23 +1127,50 @@ const CategoryListScreen = ({ navigation }) => {
   );
 };
 
+const Spacer = ({ height }) => {
+  return <View style={{ height }} />;
+};
+
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
+    flex: 1,
     backgroundColor: '#9cacbc',
   },
-  list: {
-    justifyContent: 'space-between',
-    paddingHorizontal: 10,
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
+    backgroundColor: '#9cacbc',
+    paddingBottom: 51,
+    alignItems: 'center',
+    height: HEADER_HEIGHT,
+    paddingTop: 40,
+  },
+  teamName: {
+    fontSize: 35,
+    zIndex: 1,
+    height: 53,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  input: {
+    borderBottomWidth: 1,
+    marginBottom: 20,
+    color: 'white',
+  },
+  image: {
+    width: 150,
+    height: 150,
+    marginBottom: 90,
   },
   categoryContainer: {
-    marginBottom: 20,
+    marginBottom: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 20,
-    overflow: 'hidden',
-    backgroundColor: '#f9f9f9',
-    marginHorizontal: 5,
+    marginHorizontal: 10,
     position: 'relative',
   },
   categoryContent: {
@@ -1099,29 +1180,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   categoryImage: {
-    width: '100%',
+    width: '90%',
     height: '85%',
     resizeMode: 'cover',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 20,
+    shadowRadius: 4,
+    elevation: 5,
   },
   categoryName: {
     textAlign: 'center',
-    paddingTop: 5,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  addCategory: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#e0e0e0',
-  },
-  addCategoryText: {
+    paddingTop: 1,
     fontSize: 18,
-    color: '#000',
-    textAlign: 'center',
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  list: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 9,
+    paddingTop: HEADER_HEIGHT,
   },
   modalView: {
     margin: 20,
@@ -1138,54 +1214,60 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  input: {
-    borderBottomWidth: 1,
-    marginBottom: 20,
-    width: '100%',
-  },
-  image: {
-    width: 150,
-    height: 150,
-    marginBottom: 20,
-  },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,
+    backgroundColor: 'rgba(172, 188, 198, 0)',
   },
   buttonSpacing: {
     width: 20,
   },
   menuButton: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 4,
+    right: 2,
   },
   menuContainer: {
     position: 'absolute',
-    top: 40,
-    right: 10,
-    backgroundColor: 'white',
-    borderRadius: 5,
+    top: 35,
+    right: 20,
+    borderRadius: 15,
     elevation: 5,
     padding: 10,
     zIndex: 2,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
   },
   menuItem: {
     paddingVertical: 10,
     paddingHorizontal: 15,
-    fontSize: 16,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    fontSize: 18,
+    color: 'white',
   },
   addButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: 'rgba(172, 188, 198, 0.7)',
     padding: 10,
-    borderRadius: 5,
-    marginTop: 20,
+    borderRadius: 90,
+    zIndex: 2,
     alignItems: 'center',
+    width: 93,
+    height: 93,
   },
   addButtonText: {
-    color: '#fff',
-    fontSize: 18,
+    fontSize: 69,
+    color: 'white',
+    borderRadius: 90,
+    alignContent: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyImage: {
+    width: 300,
+    height: 300,
   },
 });
 

@@ -3833,17 +3833,17 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   button: {
-    backgroundColor: '#007bff',
+    elevation: 5,backgroundColor: 'rgba(172, 188, 198, 1.7)',
     padding: 10,
     borderRadius: 5,
     marginVertical: 2,
   },
   primaryButton: {
-    backgroundColor: '#007bff',
+    elevation: 5,backgroundColor: 'rgba(172, 188, 198, 1.7)',
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 15,
+    color: 'white',
+    fontSize: 19,
   },
   title: {
     fontSize: 18,
@@ -3931,7 +3931,7 @@ const styles = StyleSheet.create({
   },
   modalView: {
     width: '80%',
-    backgroundColor: 'white',
+    
     borderRadius: 10,
     padding: 20,
     alignItems: 'center',
@@ -3939,16 +3939,16 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
-    elevation: 5,
+    elevation: 5,backgroundColor: 'rgba(172, 188, 198, 1.7)',
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: 'bold',color: 'white',
     marginBottom: 10,
   },
   modalText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 26,
     marginBottom: 20,
     textAlign: 'center',
   },
