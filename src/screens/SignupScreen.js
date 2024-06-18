@@ -5,7 +5,6 @@ import { getFirestore, collection, doc, setDoc } from 'firebase/firestore';
 import { FIREBASE_AUTH, storage } from '../config/firebase';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-
 const SignUpScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -79,7 +78,8 @@ const SignUpScreen = ({ navigation }) => {
         email: response.user.email,
         username: username,
         imageUrl: imageUrl,
-        teams: []
+        teams: [],
+        notifications: [] // Initialize the notifications array
       });
       console.log('User document created in Firestore');
 
@@ -131,6 +131,7 @@ const SignUpScreen = ({ navigation }) => {
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

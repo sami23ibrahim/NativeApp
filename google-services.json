@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "789604110114",
+    "project_id": "fir-test-ddf72",
+    "storage_bucket": "fir-test-ddf72.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:789604110114:android:9933a63bf4ba9ed52f9f7b",
+        "android_client_info": {
+          "package_name": "com.sami23ibrahim.MyAfbpp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYSuBZn3o0uNXZVg0Yw-fDicFixvLXNTk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

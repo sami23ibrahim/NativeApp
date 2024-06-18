@@ -495,15 +495,11 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, Image, Button } from 'react-native';
-import { getFirestore, doc, getDoc, updateDoc, arrayUnion, collection, query, where, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { View, Text, FlatList, StyleSheet, Alert, Image, Button, Share } from 'react-native';
+import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { FIREBASE_AUTH } from '../config/firebase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Menu, MenuOptions, MenuOption, MenuTrigger } from 'react-native-popup-menu';
-//import { Clipboard } from 'react-native';
-//import {Clipboard} from '@react-native-clipboard/clipboard';
-//import Clipboard from '@react-native-clipboard/clipboard';
-import { Share } from 'react-native';
 
 const ManageTeamScreen = ({ route }) => {
   const { teamId, teamName } = route.params;
@@ -512,16 +508,16 @@ const ManageTeamScreen = ({ route }) => {
   const [isOwner, setIsOwner] = useState(false);
   const firestore = getFirestore();
   const user = FIREBASE_AUTH.currentUser;
+
   const shareTeamId = async () => {
     try {
       await Share.share({
-        message: `Team ID: ${teamId}`,
+        message: `${teamId}`,
       });
     } catch (error) {
       Alert.alert('Error', 'Failed to share the team ID');
     }
   };
- 
 
   useEffect(() => {
     const fetchTeamMembers = async () => {
@@ -534,7 +530,7 @@ const ManageTeamScreen = ({ route }) => {
               ...member,
               role: member.admin ? 'admin' : 'member',
               isOwner: member.uid === teamData.owner.uid,
-              imageUrl: member.imageUrl || 'https://via.placeholder.com/50', // Use placeholder if no imageUrl
+              imageUrl: member.imageUrl || 'https://via.placeholder.com/50',
             };
           });
           setTeamMembers(members);
@@ -600,6 +596,39 @@ const ManageTeamScreen = ({ route }) => {
     }
   };
 
+  const deleteUser = async (member) => {
+    try {
+      const teamRef = doc(firestore, 'teams', teamId);
+      const userRef = doc(firestore, 'users', member.uid);
+  
+      // Fetch the latest team document
+      const teamDoc = await getDoc(teamRef);
+      const teamData = teamDoc.data();
+  
+      // Find the member object in the team members array
+      const memberToRemove = teamData.members.find(m => m.uid === member.uid);
+  
+      // Remove user from the team's members array
+      await updateDoc(teamRef, {
+        members: arrayRemove(memberToRemove)
+      });
+  
+      // Remove team from the user's teams array
+      await updateDoc(userRef, {
+        teams: arrayRemove({ teamId, uid: member.uid })
+      });
+  
+      // Update the team members state
+      setTeamMembers((prevMembers) => prevMembers.filter((m) => m.uid !== member.uid));
+  
+      Alert.alert('Success', 'User has been removed.');
+    } catch (error) {
+      console.error('Error removing user:', error);
+      Alert.alert('Error', 'Failed to remove user.');
+    }
+  };
+  
+
   const renderMemberItem = ({ item }) => (
     <View style={styles.memberItem}>
       <Image source={{ uri: item.imageUrl }} style={styles.memberImage} />
@@ -643,12 +672,11 @@ const ManageTeamScreen = ({ route }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{teamName} Members:</Text>
-      <Button title="Share Team ID" onPress={shareTeamId} />
+      <Button title="Copy Invitation code" onPress={shareTeamId} />
       <FlatList
         data={teamMembers}
         keyExtractor={(item) => item.uid}
         renderItem={renderMemberItem}
-      //  ListHeaderComponent={<Text style={styles.title}>Pending Join Requests:</Text>}
         ListFooterComponent={
           <FlatList
             data={joinRequests}
@@ -660,6 +688,7 @@ const ManageTeamScreen = ({ route }) => {
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

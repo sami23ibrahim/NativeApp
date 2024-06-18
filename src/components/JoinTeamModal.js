@@ -275,43 +275,57 @@
 // });
 
 // export default JoinTeamModal;
-
-
-
-import React, { useState } from 'react';
+// JoinTeamModal.js
+import React, { useState, useContext } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import { FIREBASE_AUTH } from '../config/firebase';
+import { NotificationContext } from './NotificationProvider'; // Correctly import NotificationContext
+import { addNotification as addNotificationUtil } from './notificationUtils'; // Import addNotification function correctly
 
 const JoinTeamModal = ({ setVisible, refreshTeams }) => {
   const [teamId, setTeamId] = useState('');
   const firestore = getFirestore();
   const user = FIREBASE_AUTH.currentUser;
 
+  const { addNotification } = useContext(NotificationContext); // Use NotificationContext
+
   const handleJoinTeam = async () => {
     try {
+      if (!teamId) {
+        Alert.alert('Error', 'Please enter a valid team ID.');
+        return;
+      }
+
       const teamRef = doc(firestore, 'teams', teamId);
       const teamSnapshot = await getDoc(teamRef);
 
       if (teamSnapshot.exists()) {
         const teamData = teamSnapshot.data();
 
-        // Check if the user is already in the team
         const isMember = teamData.members.some(member => member.uid === user.uid);
         if (isMember) {
           Alert.alert('Error', 'You are already a member of this team.');
           return;
         }
 
-        // Create a join request
         const joinRequestRef = doc(firestore, 'joinRequests', `${teamId}_${user.uid}`);
+        const joinRequestSnapshot = await getDoc(joinRequestRef);
+        if (joinRequestSnapshot.exists()) {
+          Alert.alert('Error', 'You already have a pending join request for this team.');
+          return;
+        }
+
         await setDoc(joinRequestRef, {
           teamId: teamId,
           userId: user.uid,
           userName: user.displayName,
           userImageUrl: user.photoURL,
-          status: 'pending' // Set status to pending
+          status: 'pending'
         });
+
+        // Use the addNotification function from notificationUtils
+        await addNotificationUtil(teamData.owner.uid, { userName: user.displayName, teamName: teamData.name, teamId: teamId, ownerId: teamData.owner.uid });
 
         Alert.alert('Request sent!', 'Your request to join the team has been sent.');
         setVisible(false);
