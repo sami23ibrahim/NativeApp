@@ -1,4 +1,3 @@
-// notificationUtils.js
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { getFirestore } from 'firebase/firestore';
 

@@ -493,9 +493,8 @@
 // export default ManageTeamScreen;
 
 
-
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, Image, Button, Share } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Alert, Image, Button, Share,TouchableOpacity } from 'react-native';
 import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { FIREBASE_AUTH } from '../config/firebase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -570,6 +569,18 @@ const ManageTeamScreen = ({ route }) => {
       const teamRef = doc(firestore, 'teams', requestData.teamId);
 
       if (action === 'approve') {
+        // Check if the user exists before approving the request
+        const userRef = doc(firestore, 'users', requestData.userId);
+        const userDoc = await getDoc(userRef);
+
+        if (!userDoc.exists()) {
+          // If user doesn't exist, alert the owner and delete the request
+          Alert.alert('Error', 'User no longer exists.');
+          await deleteDoc(requestRef);
+          return;
+        }
+
+        // Proceed with approval if user exists
         await updateDoc(teamRef, {
           members: arrayUnion({
             uid: requestData.userId,
@@ -627,7 +638,6 @@ const ManageTeamScreen = ({ route }) => {
       Alert.alert('Error', 'Failed to remove user.');
     }
   };
-  
 
   const renderMemberItem = ({ item }) => (
     <View style={styles.memberItem}>
@@ -671,8 +681,12 @@ const ManageTeamScreen = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{teamName} Members:</Text>
-      <Button title="Copy Invitation code" onPress={shareTeamId} />
+      <Text style={styles.title}>{teamName} Members:</Text> 
+
+      <TouchableOpacity style={styles.primaryButton} onPress={shareTeamId}>
+        <Text style={styles.buttonText}>Share Invitation Code</Text>
+      </TouchableOpacity>
+
       <FlatList
         data={teamMembers}
         keyExtractor={(item) => item.uid}
@@ -690,11 +704,28 @@ const ManageTeamScreen = ({ route }) => {
 };
 
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
     backgroundColor: '#9cacbc',
+  },
+  primaryButton: {
+    elevation: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Change this to your desired button color
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20, // Add some margin to separate the button from the list
+  },
+  buttonText: {
+    color: 'white', // Change this to your desired text color
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center', // Ensures the text is centered
   },
   title: {
     fontSize: 24,

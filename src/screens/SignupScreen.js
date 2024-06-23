@@ -5,6 +5,7 @@ import { getFirestore, collection, doc, setDoc } from 'firebase/firestore';
 import { FIREBASE_AUTH, storage } from '../config/firebase';
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+
 const SignUpScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -50,7 +51,6 @@ const SignUpScreen = ({ navigation }) => {
           },
           async () => {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            console.log('Image uploaded successfully:', downloadURL);
             resolve(downloadURL);
           }
         );
@@ -65,10 +65,8 @@ const SignUpScreen = ({ navigation }) => {
     setLoading(true);
     try {
       const response = await createUserWithEmailAndPassword(auth, email, password);
-      console.log('After sign-up, user authenticated:', auth.currentUser);
 
       const imageUrl = await uploadImage(imageUri, response.user.uid);
-      console.log('Image URL:', imageUrl);
 
       await updateProfile(response.user, { displayName: username, photoURL: imageUrl });
       console.log('Profile updated');
@@ -119,37 +117,63 @@ const SignUpScreen = ({ navigation }) => {
           placeholder="Password"
           onChangeText={setPassword}
         />
-        <TouchableOpacity onPress={selectImage}>
+        <TouchableOpacity onPress={selectImage} style={styles.imagePlaceholder}>
           <Image source={{ uri: imageUri || 'https://via.placeholder.com/150' }} style={styles.image} />
         </TouchableOpacity>
         {loading ? (
           <ActivityIndicator size="large" color="#0000ff" />
         ) : (
-          <Button title="Sign Up" onPress={signUp} />
+          <TouchableOpacity style={styles.button} onPress={signUp}>
+            <Text style={styles.buttonText}>Sign Up</Text>
+          </TouchableOpacity>
         )}
       </KeyboardAvoidingView>
     </View>
   );
 };
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     padding: 16,
+    backgroundColor: '#9cacbc',
+  },
+  imagePlaceholder: {
+    alignItems: 'center',
+    marginBottom: 10,
+    width: '100%',
+  },
+  image: {
+    width: 300,
+    height: 300,
+    borderRadius: 15,
   },
   input: {
     height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 12,
+    borderColor: '#ccc',
+    borderWidth: 1.3,
+    borderRadius: 20,
+    marginBottom: 15,
     paddingHorizontal: 8,
+    width: '88%',
+    backgroundColor: '#9cacbc',
   },
-  image: {
-    width: 150,
-    height: 150,
+  button: {
+    width: '65%',
+    elevation: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

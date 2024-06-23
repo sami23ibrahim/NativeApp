@@ -1,7 +1,5 @@
-// src/components/ChangePassword.js
-
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet, Modal } from 'react-native';
+import { View, Text, TextInput, Button, Alert, StyleSheet, Modal, TouchableOpacity } from 'react-native';
 import { getAuth, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 
 const ChangePassword = () => {
@@ -53,23 +51,27 @@ const ChangePassword = () => {
   };
 
   return (
-    <View>
+    <View style={styles.container}>
       <Text style={styles.title}>Update Password</Text>
       <TextInput
         placeholder="New Password"
+        placeholderTextColor={"white"}
         value={newPassword}
         onChangeText={setNewPassword}
         secureTextEntry
-        style={styles.input}
+        style={[styles.input, passwordMismatch && { borderColor: 'red' }]}
       />
       <TextInput
         placeholder="Confirm New Password"
+        placeholderTextColor={"white"}
         value={confirmNewPassword}
         onChangeText={setConfirmNewPassword}
         secureTextEntry
         style={[styles.input, passwordMismatch && { borderColor: 'red' }]}
       />
-      <Button title="Update Password" onPress={handlePasswordChange} />
+      <TouchableOpacity style={styles.button} onPress={handlePasswordChange}>
+        <Text style={styles.buttonText}>Update Password</Text>
+      </TouchableOpacity>
       {passwordMismatch && <Text style={styles.errorText}>The passwords do not match.</Text>}
       <Modal
         visible={modalVisible}
@@ -81,12 +83,20 @@ const ChangePassword = () => {
           <Text style={styles.modalText}>Please reauthenticate to proceed</Text>
           <TextInput
             placeholder="Current Password"
+            placeholderTextColor={"white"}
             value={currentPassword}
             onChangeText={setCurrentPassword}
             secureTextEntry
             style={styles.input}
           />
-          <Button title="Reauthenticate" onPress={handleReauthenticate} />
+          <View style={styles.modalButtonContainer}>
+            <TouchableOpacity style={styles.modalButton} onPress={handleReauthenticate}>
+              <Text style={styles.buttonText}>Reauthenticate</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalButton} onPress={() => setModalVisible(false)}>
+              <Text style={styles.buttonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
     </View>
@@ -94,26 +104,60 @@ const ChangePassword = () => {
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 16,
+    backgroundColor: '#9cacbc',
+  },
   title: {
-    fontSize: 24,
-    marginBottom: 20,
+    fontSize: 28,
+    marginBottom: 40,
+    color: 'white',
+    textAlign: 'center',
   },
   input: {
-    borderWidth: 1,
+    height: 40,
     borderColor: '#ccc',
-    padding: 10,
-    marginBottom: 20,
-    borderRadius: 5,
+    borderWidth: 1.3,
+    borderRadius: 20,
+    marginBottom: 15,
+    paddingHorizontal: 8,
+    width: '88%',
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    alignSelf: 'center',
+    color: 'white',
   },
   errorText: {
     color: 'red',
     marginBottom: 20,
+    textAlign: 'center',
+    width: '88%',
+    alignSelf: 'center',
+  },
+  button: {
+    width: '65%',
+    elevation: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    marginTop: 30,
+    alignSelf: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: 'bold',
   },
   modalView: {
     margin: 20,
-    backgroundColor: 'white',
+    backgroundColor: '#9cacbc',
     borderRadius: 20,
-    padding: 35,
+    padding: 25,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -122,8 +166,26 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   modalText: {
-    marginBottom: 15,
+    marginBottom: 25,
     textAlign: 'center',
+    fontSize: 16,
+    color: 'white',
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  modalButton: {
+    flex: 1,
+    elevation: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 5,
   },
 });
 

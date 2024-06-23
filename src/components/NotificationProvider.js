@@ -16,13 +16,11 @@ export const NotificationProvider = ({ children }) => {
 
   const fetchNotifications = async (user) => {
     if (user) {
-      console.log('Fetching notifications for user:', user.uid);
       const userRef = doc(firestore, 'users', user.uid);
       const userDoc = await getDoc(userRef);
 
       if (userDoc.exists()) {
         const fetchedNotifications = userDoc.data().notifications || [];
-        console.log('Fetched notifications:', fetchedNotifications);
         setNotifications(fetchedNotifications);
         const hasUnread = fetchedNotifications.some(notification => !notification.read);
         setUnreadNotifications(hasUnread); // Set unread notifications state

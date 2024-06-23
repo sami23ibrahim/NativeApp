@@ -70,30 +70,34 @@
 // export default NotificationTestScreen;
 
 // src/screens/NotificationTestScreen.js
+
 import React, { useContext, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { NotificationContext } from '../components/NotificationProvider';
 import { useNavigation } from '@react-navigation/native';
+import { getFirestore, doc, getDoc } from 'firebase/firestore'; // Import Firebase Firestore
 
 const NotificationTestScreen = () => {
   const { notifications, clearNotifications } = useContext(NotificationContext);
   const navigation = useNavigation();
+  const db = getFirestore(); // Initialize Firestore
 
   useEffect(() => {
     clearNotifications();
   }, [clearNotifications]);
 
-  console.log('NotificationTestScreen - notifications:', notifications);
+  const handleNotificationPress = async (notification) => {
+    const teamDocRef = doc(db, 'teams', notification.teamId);
+    const teamDocSnap = await getDoc(teamDocRef);
 
-  const handleNotificationPress = (notification) => {
-    console.log('Notification pressed:', notification);
-    navigation.navigate('ManageTeam', { teamId: notification.teamId });
+    if (teamDocSnap.exists()) {
+      navigation.navigate('ManageTeam', { teamId: notification.teamId });
+    } else {
+      Alert.alert('Team not found', 'The team has been deleted or does not exist.');
+    }
   };
 
   const renderItem = ({ item }) => {
-    console.log('Rendering item:', item);
-
-    // Convert timestamp to date string
     const timestampString = new Date(item.timestamp.seconds * 1000).toLocaleString();
 
     return (
@@ -110,9 +114,9 @@ const NotificationTestScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text>Notification Test Screen</Text>
+      <Text style={styles.title}>NOTIFICATIONS</Text>
       <FlatList
-        data={notifications.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds)} // Sort notifications by timestamp
+        data={notifications.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds)}
         keyExtractor={(item, index) => index.toString()}
         renderItem={renderItem}
       />
@@ -131,6 +135,12 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#eee',
     borderRadius: 5,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginVertical: 10,
+    color: 'black',
   },
   notificationText: {
     marginBottom: 5,

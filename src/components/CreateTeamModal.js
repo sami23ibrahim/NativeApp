@@ -503,8 +503,6 @@ const CreateTeamModal = ({ setVisible, refreshTeams }) => {
   };
 
   const handleCreateTeam = async () => {
-    console.log('Team Name:', teamName);
-    console.log('Image URI:', imageUri);
     if (!teamName.trim() || !imageUri) {
       Alert.alert('Missing information', 'Please provide a team name and select an image.');
       return;
@@ -549,8 +547,9 @@ const CreateTeamModal = ({ setVisible, refreshTeams }) => {
     <View style={styles.modalView}>
       <Text style={styles.modalTitle}>Create New Team</Text>
       <TextInput
-        placeholder="Team Name"
+        placeholder="Enter Team Name.."
         value={teamName}
+        placeholderTextColor='white'
         onChangeText={setTeamName}
         style={styles.input}
         editable={!loading} // Disable input while loading
@@ -561,20 +560,36 @@ const CreateTeamModal = ({ setVisible, refreshTeams }) => {
           style={styles.image}
         />
       </TouchableOpacity>
+      
+      {/* <View style={styles.buttonRow}>
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
-        <Button title="Create Team" onPress={handleCreateTeam} />
+        
+        <Button title="Create" color={'#9cacbc'} onPress={handleCreateTeam} />
       )}
-      <Button title="Cancel" onPress={() => setVisible(false)} disabled={loading} />
-    </View>
+    
+      <Button title="Cancel" style={ styles.cancelButton} onPress={() => setVisible(false)} disabled={loading} /> */}
+
+      <View style={styles.buttonRow}>
+  <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleCreateTeam}>
+    <Text style={styles.buttonText}>Create</Text>
+  </TouchableOpacity>
+  <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => setVisible(false)} disabled={loading}>
+    <Text style={styles.buttonText}>Cancel</Text>
+  </TouchableOpacity>
+</View>
+
+
+      </View>
+    // </View>
   );
 };
 
 const styles = StyleSheet.create({
   modalView: {
     margin: 20,
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
     borderRadius: 20,
     padding: 35,
     alignItems: 'center',
@@ -584,22 +599,59 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
+  button: {
+    elevation: 5,backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    padding: 10,
+    borderRadius: 5,  justifyContent: 'space-between',
+    marginVertical: 2,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 19,
+  },
+  cancelButton: {
+    width:'45%',
+    elevation: 5,
+    paddingVertical: 10,marginHorizontal: 5, // Add margin between the buttons
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Change this to your desired button color
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20, // Add some margin to separate the button from the list
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between', // Adjust this as needed
+    marginTop: 20, // Add some margin to separate from other elements
+   
+  },
   modalTitle: {
     fontSize: 24,
     marginBottom: 15,
+    color: 'white',
   },
   input: {
     height: 40,
-    borderColor: 'gray',
+    borderColor: '#ccc',
     borderWidth: 1,
     marginBottom: 12,
+    borderRadius: 20,
     paddingHorizontal: 8,
+    color: 'white',
     width: 200,
   },
   image: {
     width: 150,
     height: 150,
     marginBottom: 20,
+    borderRadius: 30,
+
+  },
+  buttons: {
+    flexDirection: 'row',
+    padding: 10,
+    borderRadius: 90,
   },
 });
 

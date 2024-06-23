@@ -769,8 +769,520 @@
 
 
 
+// import React, { useState, useEffect, useRef } from 'react';
+// import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Dimensions, Modal, TextInput, Button, Alert, ActivityIndicator, TouchableWithoutFeedback, Animated, Keyboard } from 'react-native';
+// import * as ImagePicker from 'expo-image-picker';
+// import { getDocs, collection, addDoc, deleteDoc, doc, updateDoc, query, where, getDoc } from 'firebase/firestore';
+// import { storage, db } from '../config/firebase';
+// import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
+// import { useNavigation, useRoute } from '@react-navigation/native';
+// import { MaterialIcons } from '@expo/vector-icons';
+// import { FIREBASE_AUTH } from '../config/firebase';
+// import CategorySearchBar from '../components/CategorySearchBar';
+
+// const HEADER_HEIGHT = 92;
+
+// const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
+
+// const CategoryListScreen = ({ navigation }) => {
+//   const [categories, setCategories] = useState([]);
+//   const [categoryName, setCategoryName] = useState('');
+//   const [imageUri, setImageUri] = useState('');
+//   const [modalVisible, setModalVisible] = useState(false);
+//   const [loading, setLoading] = useState(false);
+//   const [menuVisible, setMenuVisible] = useState(false);
+//   const [selectedCategory, setSelectedCategory] = useState(null);
+//   const [menuCategory, setMenuCategory] = useState(null);
+//   const [userRole, setUserRole] = useState('');
+//   const route = useRoute();
+//   const { teamId, teamName } = route.params;
+//   const numColumns = 2;
+//   const user = FIREBASE_AUTH.currentUser;
+
+//   const scrollY = useRef(new Animated.Value(0)).current;
+//   const flatListRef = useRef(null);
+//   const searchBarRef = useRef(null);
+
+//   useEffect(() => {
+//     navigation.setOptions({ title: `"${teamName.toUpperCase()}"` });
+//     fetchCategoriesAndRole();
+//   }, [teamId, teamName]);
+
+//   const fetchCategoriesAndRole = async () => {
+//     const q = query(collection(db, 'categories'), where('teamId', '==', teamId));
+//     const querySnapshot = await getDocs(q);
+//     const fetchedCategories = querySnapshot.docs.map(doc => ({
+//       id: doc.id,
+//       ...doc.data()
+//     }));
+//     setCategories(fetchedCategories);
+
+//     const teamDocRef = doc(db, 'teams', teamId);
+//     const teamDoc = await getDoc(teamDocRef);
+//     if (teamDoc.exists()) {
+//       const teamData = teamDoc.data();
+//       const member = teamData.members.find(m => m.uid === user.uid);
+//       if (member) {
+//         setUserRole(member.admin ? 'admin' : 'member');
+//       }
+//     }
+//   };
+
+//   const selectImage = async () => {
+//     const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
+//     if (status !== 'granted') {
+//       alert('Sorry, we need camera roll permissions to make this work!');
+//       return;
+//     }
+
+//     const result = await ImagePicker.launchImageLibraryAsync({
+//       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+//       allowsEditing: true,
+//       aspect: [4, 3],
+//       quality: 1,
+//     });
+
+//     if (!result.cancelled && result.assets && result.assets.length > 0) {
+//       setImageUri(result.assets[0].uri);
+//     }
+//   };
+
+//   const uploadImage = async (uri) => {
+//     if (!uri) return null;
+//     try {
+//       const response = await fetch(uri);
+//       const blob = await response.blob();
+//       const filename = uri.substring(uri.lastIndexOf('/') + 1);
+//       const storageRef = ref(storage, `images/${filename}`);
+//       const uploadTask = uploadBytesResumable(storageRef, blob);
+
+//       return new Promise((resolve, reject) => {
+//         uploadTask.on(
+//           'state_changed',
+//           null,
+//           (error) => {
+//             console.error('Upload failed', error);
+//             reject(error);
+//           },
+//           async () => {
+//             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+//             resolve(downloadURL);
+//           }
+//         );
+//       });
+//     } catch (error) {
+//       console.error('Error uploading image:', error);
+//       throw error;
+//     }
+//   };
+
+//   const addCategory = async () => {
+//     if (!categoryName.trim() || !imageUri) {
+//       Alert.alert('Missing information', 'Please provide a name and select an image.');
+//       return;
+//     }
+//     setLoading(true);
+//     try {
+//       const imageUrl = await uploadImage(imageUri);
+//       await addDoc(collection(db, 'categories'), {
+//         name: categoryName,
+//         img: imageUrl,
+//         teamId: teamId,
+//       });
+//       Alert.alert('Category added!', 'Your category has been added successfully.');
+//       setCategoryName('');
+//       setImageUri('');
+//       setModalVisible(false);
+//       fetchCategoriesAndRole();
+//     } catch (error) {
+//       console.error('Error adding category:', error);
+//       Alert.alert('Error', `There was an error adding your category: ${error.message}`);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const editCategory = async () => {
+//     if (!selectedCategory || !categoryName.trim()) {
+//       Alert.alert('Missing information', 'Please provide a name.');
+//       return;
+//     }
+
+//     setLoading(true);
+//     try {
+//       let imageUrl = selectedCategory.img;
+//       if (imageUri && imageUri !== selectedCategory.img) {
+//         imageUrl = await uploadImage(imageUri);
+//         if (selectedCategory.img) {
+//           const oldImageRef = ref(storage, selectedCategory.img);
+//           await deleteObject(oldImageRef);
+//         }
+//       }
+
+//       await updateDoc(doc(db, 'categories', selectedCategory.id), {
+//         name: categoryName,
+//         img: imageUrl,
+//       });
+
+//       Alert.alert('Category updated!', 'Your category has been updated successfully.');
+//       setSelectedCategory(null);
+//       setCategoryName('');
+//       setImageUri('');
+//       setModalVisible(false);
+//       fetchCategoriesAndRole();
+//     } catch (error) {
+//       console.error('Error updating category:', error);
+//       Alert.alert('Error', `There was an error updating your category: ${error.message}`);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const deleteCategory = async (categoryId) => {
+//     try {
+//       const categoryRef = doc(db, 'categories', categoryId);
+//       const categoryDoc = await getDoc(categoryRef);
+//       if (categoryDoc.exists()) {
+//         const categoryData = categoryDoc.data();
+
+//         const itemsQuerySnapshot = await getDocs(collection(db, 'categories', categoryId, 'items'));
+//         for (const itemDoc of itemsQuerySnapshot.docs) {
+//           const itemData = itemDoc.data();
+//           if (itemData.img) {
+//             const imgRef = ref(storage, itemData.img);
+//             await deleteObject(imgRef);
+//           }
+//           await deleteDoc(doc(db, 'categories', categoryId, 'items', itemDoc.id));
+//         }
+
+//         if (categoryData.img) {
+//           const categoryImgRef = ref(storage, categoryData.img);
+//           await deleteObject(categoryImgRef);
+//         }
+
+//         await deleteDoc(categoryRef);
+
+//         Alert.alert('Category deleted!', 'Your category and its items have been deleted successfully.');
+//         fetchCategoriesAndRole();
+//       } else {
+//         Alert.alert('Error', 'Category not found.');
+//       }
+//     } catch (error) {
+//       console.error('Error deleting category:', error);
+//       Alert.alert('Error', `There was an error deleting your category: ${error.message}`);
+//     }
+//   };
+
+//   const openMenu = (category) => {
+//     setMenuCategory(category);
+//     setMenuVisible(true);
+//   };
+
+//   const closeMenu = () => {
+//     setMenuCategory(null);
+//     setMenuVisible(false);
+//   };
+
+//   const openEditModal = (category) => {
+//     setSelectedCategory(category);
+//     setCategoryName(category.name);
+//     setImageUri(category.img);
+//     setModalVisible(true);
+//     closeMenu();
+//   };
+
+//   const handleItemSelect = (selectedCategory) => {
+//     const index = categories.findIndex(category => category.id === selectedCategory.id);
+//     const adjustedIndex = Math.floor(index / numColumns);
+
+//     if (flatListRef.current && adjustedIndex >= 0) {
+//       flatListRef.current.scrollToIndex({ index: adjustedIndex, animated: true });
+//     } else {
+//       console.warn('Index out of bounds:', adjustedIndex);
+//     }
+//   };
+
+//   const handleScroll = () => {
+//     searchBarRef.current?.clearInput();
+//     Keyboard.dismiss();
+//   };
+
+//   const renderCategoryItem = ({ item }) => {
+//     const screenWidth = Dimensions.get('window').width;
+//     const itemWidth = (screenWidth - 60) / numColumns;
+
+//     return (
+//       <View style={[styles.categoryContainer, { width: itemWidth, height: itemWidth }]}>
+//         <TouchableOpacity onPress={() => navigation.navigate('CategoryDetailScreen', { categoryId: item.id, categoryName: item.name, teamName })} style={styles.categoryContent}>
+//           <Image source={{ uri: item.img }} style={styles.categoryImage} />
+//           <Text style={styles.categoryName}>{item.name}</Text>
+//         </TouchableOpacity>
+//         {userRole === 'admin' && (
+//           <TouchableOpacity onPress={() => openMenu(item)} style={styles.menuButton}>
+//             <MaterialIcons name="more-vert" size={30} color="white" />
+//           </TouchableOpacity>
+//         )}
+//         {menuVisible && menuCategory && menuCategory.id === item.id && (
+//           <View style={styles.menuContainer}>
+//             <TouchableOpacity onPress={() => openEditModal(item)}>
+//               <Text style={styles.menuItem}>Edit</Text>
+//             </TouchableOpacity>
+//             <TouchableOpacity onPress={() => deleteCategory(item.id)}>
+//               <Text style={styles.menuItem}>Delete</Text>
+//             </TouchableOpacity>
+//           </View>
+//         )}
+//       </View>
+//     );
+//   };
+
+//   const headerTranslateY = scrollY.interpolate({
+//     inputRange: [0, HEADER_HEIGHT],
+//     outputRange: [0, -HEADER_HEIGHT],
+//     extrapolate: 'clamp',
+//   });
+
+//   return (
+//     <TouchableWithoutFeedback onPress={closeMenu}>
+//       <View style={styles.container}>
+//         <Animated.View style={[styles.header, { transform: [{ translateY: headerTranslateY }] }]}>
+//           <Text style={styles.teamName}>{teamName}</Text>
+//           {categories.length > 0 && <CategorySearchBar ref={searchBarRef} items={categories} onSelect={handleItemSelect} />}
+//         </Animated.View>
+//         <Spacer height={80} />
+//         {categories.length === 0 ? (
+//           <View style={styles.emptyContainer}>
+//             <Image source={{ uri: 'https://via.placeholder.com/300' }} style={styles.emptyImage} />
+//           </View>
+//         ) : (
+//           <AnimatedFlatList
+//             ref={flatListRef}
+//             data={categories}
+//             keyExtractor={(item) => item.id}
+//             renderItem={renderCategoryItem}
+//             numColumns={numColumns}
+//             initialNumToRender={categories.length}
+//             maxToRenderPerBatch={categories.length}
+//             contentContainerStyle={styles.list}
+//             onScroll={Animated.event(
+//               [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+//               { useNativeDriver: true, listener: handleScroll }
+//             )}
+//             onScrollToIndexFailed={(info) => {
+//               console.warn('scrollToIndex failed', info);
+//               const wait = new Promise(resolve => setTimeout(resolve, 500));
+//               wait.then(() => {
+//                 flatListRef.current?.scrollToIndex({
+//                   index: info.index,
+//                   animated: true,
+//                 });
+//               });
+//             }}
+//           />
+//         )}
+//         <Button title="Manage Team" onPress={() => navigation.navigate('ManageTeam', { teamId, teamName })} />
+//         {userRole === 'admin' && (
+//           <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+//             <Text style={styles.addButtonText}>+</Text>
+//           </TouchableOpacity>
+//         )}
+//         <Modal
+//           animationType="slide"
+//           transparent={true}
+//           visible={modalVisible}
+//           onRequestClose={() => setModalVisible(false)}
+//         >
+//           <View style={styles.modalView}>
+//             <TextInput
+//               placeholder="Category Name"
+//               value={categoryName}
+//               onChangeText={setCategoryName}
+//               style={styles.input}
+//             />
+//             <TouchableOpacity onPress={selectImage}>
+//               <Image
+//                 source={{ uri: imageUri || 'https://via.placeholder.com/150' }}
+//                 style={styles.image}
+//               />
+//             </TouchableOpacity>
+//             <View style={styles.buttonContainer}>
+//               {loading ? (
+//                 <ActivityIndicator size="large" color="#0000ff" />
+//               ) : (
+//                 <>
+//                   <Button title={selectedCategory ? "Edit Category" : "Add Category"} onPress={selectedCategory ? editCategory : addCategory} />
+//                   <View style={styles.buttonSpacing} />
+//                   <Button title="Cancel" onPress={() => setModalVisible(false)} />
+//                 </>
+//               )}
+//             </View>
+//           </View>
+//         </Modal>
+//       </View>
+//     </TouchableWithoutFeedback>
+//   );
+// };
+
+// const Spacer = ({ height }) => {
+//   return <View style={{ height }} />;
+// };
+
+// const styles = StyleSheet.create({
+//   container: {
+//     flex: 1,
+//     backgroundColor: '#9cacbc',
+//   },
+//   header: {
+//     position: 'absolute',
+//     top: 0,
+//     left: 0,
+//     right: 0,
+//     zIndex: 2,
+//     backgroundColor: '#9cacbc',
+//     paddingBottom: 51,
+//     alignItems: 'center',
+//     height: HEADER_HEIGHT,
+//     paddingTop: 40,
+//   },
+//   teamName: {
+//     fontSize: 35,
+//     zIndex: 1,
+//     height: 53,
+//     fontWeight: 'bold',
+//     color: 'white',
+//   },
+//   input: {
+//     borderBottomWidth: 1,
+//     marginBottom: 20,
+//     color: 'white',
+//   },
+//   image: {
+//     width: 150,
+//     height: 150,
+//     marginBottom: 90,
+//     shadowColor: '#000',
+//     shadowOffset: { width: 0, height: 2 },
+//     shadowOpacity: 0.25,
+//     shadowRadius: 4,
+//   },
+//   categoryContainer: {
+//     marginBottom: 16,
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//     borderRadius: 20,
+//     marginHorizontal: 10,
+//     position: 'relative',
+    
+//   },
+//   categoryContent: {
+//     width: '100%',
+//     height: '100%',
+//     alignItems: 'center',
+//     justifyContent: 'center',
+//   },
+//   categoryImage: {
+//     width: '90%',
+//     height: '85%',
+//     resizeMode: 'cover',
+//     borderRadius: 20, 
+//     shadowOffset: { width: 0, height: 2 },
+//     shadowColor: '#000',
+//     shadowOffset: { width: 0, height: 2 },
+//     shadowOpacity: 0.25,
+//     shadowRadius: 4,
+//     elevation: 5,
+//   },
+//   categoryName: {
+//     textAlign: 'center',
+//     paddingTop: 1,
+//     fontSize: 18,
+//     fontWeight: 'bold',
+//     color: 'white',
+//   },
+//   list: {
+//     justifyContent: 'space-between',
+//     paddingHorizontal: 9,
+//     paddingTop: HEADER_HEIGHT,
+//   },
+//   modalView: {
+//     margin: 20,
+//     backgroundColor: 'white',
+//     borderRadius: 20,
+//     padding: 35,
+//     alignItems: 'center',
+//     shadowColor: '#000',
+//     shadowOffset: {
+//       width: 0,
+//       height: 2,
+//     },
+//     shadowOpacity: 0.25,
+//     shadowRadius: 4,
+//     elevation: 5,
+//   },
+//   buttonContainer: {
+//     flexDirection: 'row',
+//     justifyContent: 'space-between',
+//     marginTop: 20,
+//     backgroundColor: 'rgba(172, 188, 198, 0)',
+//   },
+//   buttonSpacing: {
+//     width: 20,
+//   },
+//   menuButton: {
+//     position: 'absolute',
+//     top: 4,
+//     right: 2,
+//   },
+//   menuContainer: {
+//     position: 'absolute',
+//     top: 35,
+//     right: 20,
+//     borderRadius: 15,
+//     elevation: 5,
+//     padding: 10,
+//     zIndex: 2,
+//     backgroundColor: 'rgba(172, 188, 198, 1.7)',
+//   },
+//   menuItem: {
+//     paddingVertical: 10,
+//     paddingHorizontal: 15,
+//     backgroundColor: 'rgba(172, 188, 198, 1.7)',
+//     fontSize: 18,
+//     color: 'white',
+//   },
+//   addButton: {
+//     backgroundColor: 'rgba(172, 188, 198, 0.7)',
+//     padding: 10,
+//     borderRadius: 90,
+//     zIndex: 2,
+//     alignItems: 'center',
+//     width: 93,
+//     height: 93,
+//   },
+//   addButtonText: {
+//     fontSize: 69,
+//     color: 'white',
+//     borderRadius: 90,
+//     alignContent: 'center',
+//   },
+//   emptyContainer: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//   },
+//   emptyImage: {
+//     width: 300,
+//     height: 300,
+//   },
+// });
+
+// export default CategoryListScreen;
+
+
+
+
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Dimensions, Modal, TextInput, Button, Alert, ActivityIndicator, TouchableWithoutFeedback, Animated, Keyboard } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Dimensions, Modal, TextInput, Alert, ActivityIndicator, TouchableWithoutFeedback, Animated, Keyboard } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { getDocs, collection, addDoc, deleteDoc, doc, updateDoc, query, where, getDoc } from 'firebase/firestore';
 import { storage, db } from '../config/firebase';
@@ -806,7 +1318,20 @@ const CategoryListScreen = ({ navigation }) => {
   useEffect(() => {
     navigation.setOptions({ title: `"${teamName.toUpperCase()}"` });
     fetchCategoriesAndRole();
-  }, [teamId, teamName]);
+
+    const unsubscribeFocus = navigation.addListener('focus', () => {
+      setMenuVisible(false);
+    });
+
+    const unsubscribeBlur = navigation.addListener('blur', () => {
+      setMenuVisible(false);
+    });
+
+    return () => {
+      unsubscribeFocus();
+      unsubscribeBlur();
+    };
+  }, [teamId, teamName, navigation]);
 
   const fetchCategoriesAndRole = async () => {
     const q = query(collection(db, 'categories'), where('teamId', '==', teamId));
@@ -842,7 +1367,7 @@ const CategoryListScreen = ({ navigation }) => {
       quality: 1,
     });
 
-    if (!result.cancelled && result.assets && result.assets.length > 0) {
+    if (!result.canceled && result.assets && result.assets.length > 0) {
       setImageUri(result.assets[0].uri);
     }
   };
@@ -866,7 +1391,6 @@ const CategoryListScreen = ({ navigation }) => {
           },
           async () => {
             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            console.log('Image uploaded successfully:', downloadURL);
             resolve(downloadURL);
           }
         );
@@ -995,9 +1519,6 @@ const CategoryListScreen = ({ navigation }) => {
   const handleItemSelect = (selectedCategory) => {
     const index = categories.findIndex(category => category.id === selectedCategory.id);
     const adjustedIndex = Math.floor(index / numColumns);
-    console.log('Selected Category:', selectedCategory);
-    console.log('Calculated Index:', adjustedIndex);
-    console.log('Total Categories:', categories.length);
 
     if (flatListRef.current && adjustedIndex >= 0) {
       flatListRef.current.scrollToIndex({ index: adjustedIndex, animated: true });
@@ -1009,6 +1530,7 @@ const CategoryListScreen = ({ navigation }) => {
   const handleScroll = () => {
     searchBarRef.current?.clearInput();
     Keyboard.dismiss();
+    closeMenu(); // Close the menu when scrolling
   };
 
   const renderCategoryItem = ({ item }) => {
@@ -1045,6 +1567,13 @@ const CategoryListScreen = ({ navigation }) => {
     outputRange: [0, -HEADER_HEIGHT],
     extrapolate: 'clamp',
   });
+
+  const openAddModal = () => {
+    setSelectedCategory(null);
+    setCategoryName('');
+    setImageUri('');
+    setModalVisible(true);
+  };
 
   return (
     <TouchableWithoutFeedback onPress={closeMenu}>
@@ -1084,41 +1613,53 @@ const CategoryListScreen = ({ navigation }) => {
             }}
           />
         )}
-        <Button title="Manage Team" onPress={() => navigation.navigate('ManageTeam', { teamId, teamName })} />
-        {userRole === 'admin' && (
-          <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
-            <Text style={styles.addButtonText}>+</Text>
+        <View style={styles.buttonRow}>
+          <TouchableOpacity onPress={() => navigation.navigate('ManageTeam', { teamId, teamName })} style={styles.manageTeamButton}>
+            <Text style={styles.manageTeamButtonText}>Manage Team</Text>
           </TouchableOpacity>
-        )}
+          {userRole === 'admin' && (
+            <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
+              <Text style={styles.addButtonText}>+ add category</Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <Modal
+          placeholderTextColor={"white"}
           animationType="slide"
           transparent={true}
           visible={modalVisible}
           onRequestClose={() => setModalVisible(false)}
         >
-          <View style={styles.modalView}>
-            <TextInput
-              placeholder="Category Name"
-              value={categoryName}
-              onChangeText={setCategoryName}
-              style={styles.input}
-            />
-            <TouchableOpacity onPress={selectImage}>
-              <Image
-                source={{ uri: imageUri || 'https://via.placeholder.com/150' }}
-                style={styles.image}
+          <View style={styles.modalContainer}>
+            <View style={styles.modalView}>
+              <TextInput
+                placeholder="Category Name"
+                value={categoryName}
+                onChangeText={setCategoryName}
+                style={styles.input}
+                placeholderTextColor="white"
               />
-            </TouchableOpacity>
-            <View style={styles.buttonContainer}>
-              {loading ? (
-                <ActivityIndicator size="large" color="#0000ff" />
-              ) : (
-                <>
-                  <Button title={selectedCategory ? "Edit Category" : "Add Category"} onPress={selectedCategory ? editCategory : addCategory} />
-                  <View style={styles.buttonSpacing} />
-                  <Button title="Cancel" onPress={() => setModalVisible(false)} />
-                </>
-              )}
+              <TouchableOpacity onPress={selectImage}>
+                <Image
+                  source={{ uri: imageUri || 'https://via.placeholder.com/150' }}
+                  style={[styles.image, { borderRadius: 20 }]} // Customizable border radius
+                />
+              </TouchableOpacity>
+              <View style={styles.buttonContainer}>
+                {loading ? (
+                  <ActivityIndicator size="large" color="#0000ff" />
+                ) : (
+                  <>
+                    <TouchableOpacity style={[styles.button, styles.addCategoryButton]} onPress={selectedCategory ? editCategory : addCategory}>
+                      <Text style={styles.buttonText}>{selectedCategory ? "Update" : "Add Category"}</Text>
+                    </TouchableOpacity>
+                    <View style={styles.buttonSpacing} />
+                    <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => setModalVisible(false)}>
+                      <Text style={styles.buttonText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
             </View>
           </View>
         </Modal>
@@ -1156,18 +1697,19 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   input: {
-    borderBottomWidth: 1,
-    marginBottom: 20,
-    color: 'white',
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1.3,
+    borderRadius: 20,
+    marginBottom: 12,
+    paddingHorizontal: 8,
+    width: 200,
+    color: 'white', // Ensure the text color is white
   },
   image: {
     width: 150,
     height: 150,
-    marginBottom: 90,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    marginBottom: 20,
   },
   categoryContainer: {
     marginBottom: 16,
@@ -1176,7 +1718,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginHorizontal: 10,
     position: 'relative',
-    
+  },
+  menuItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    fontSize: 18,
+    color: 'white',
   },
   categoryContent: {
     width: '100%',
@@ -1189,11 +1737,12 @@ const styles = StyleSheet.create({
     height: '85%',
     resizeMode: 'cover',
     borderRadius: 20,
-    elevation: 5,
-    shadowColor: 'black',
+    shadowOffset: { width: 10, height: 2 },
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.95,
+    shadowOpacity: 0.25,
     shadowRadius: 4,
+    elevation: 5,
   },
   categoryName: {
     textAlign: 'center',
@@ -1207,17 +1756,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingTop: HEADER_HEIGHT,
   },
-  modalView: {
-    margin: 20,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 35,
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalView: {
+    width: '80%',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+    backgroundColor: 'rgba(172, 188, 198, 0.8)',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
@@ -1226,47 +1778,79 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 20,
-    backgroundColor: 'rgba(172, 188, 198, 0)',
+    width: '100%',
   },
   buttonSpacing: {
     width: 20,
   },
+  button: {
+    elevation: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Change this to your desired button color
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20, // Add some margin to separate the button from the list
+  },
+  addCategoryButton: {
+    elevation: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Change this to your desired button color
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20, // Add some margin to separate the button from the list
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 10,
+  },
+  cancelButton: {
+    elevation: 5,
+    paddingVertical: 1,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Change this to your desired button color
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20, // Add some margin to separate the button from the list
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  successMessage: {
+    position: 'absolute',
+    top: 100,
+    left: 110,
+    transform: [{ translateX: -50 }],
+    backgroundColor: 'green',
+    padding: 20,
+    borderRadius: 10,
+    zIndex: 1,
+  },
+  successText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
   menuButton: {
     position: 'absolute',
-    top: 4,
-    right: 2,
+    top: 10,
+    right: 10,
   },
-  menuContainer: {
-    position: 'absolute',
-    top: 35,
-    right: 20,
-    borderRadius: 15,
-    elevation: 5,
-    padding: 10,
-    zIndex: 2,
-    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+  optionsContainer: {
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Your desired background color
+    padding: 5,
+    borderRadius: 10,
   },
-  menuItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+  optionText: {
+    color: 'white', // Your desired text color
     fontSize: 18,
-    color: 'white',
-  },
-  addButton: {
-    backgroundColor: 'rgba(172, 188, 198, 0.7)',
-    padding: 10,
-    borderRadius: 90,
-    zIndex: 2,
-    alignItems: 'center',
-    width: 93,
-    height: 93,
-  },
-  addButtonText: {
-    fontSize: 69,
-    color: 'white',
-    borderRadius: 90,
-    alignContent: 'center',
   },
   emptyContainer: {
     flex: 1,
@@ -1276,6 +1860,48 @@ const styles = StyleSheet.create({
   emptyImage: {
     width: 300,
     height: 300,
+  },
+  manageTeamButton: {
+    elevation: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Change this to your desired button color
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20, // Add some margin to separate the button from the list
+    width: '45%',
+  },
+  manageTeamButtonText: {
+    color: 'white',
+    fontSize: 19,
+    fontWeight: 'bold', 
+  },
+  addButton: {
+    elevation: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Change this to your desired button color
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20, // Add some margin to separate the button from the list
+    width: '45%',
+  },
+  addButtonText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  menuContainer: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    borderRadius: 10,
+    elevation: 5,
+    padding: 10,
+    zIndex: 2,
   },
 });
 

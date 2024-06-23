@@ -7,7 +7,6 @@ const PasswordResetScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
 
   useEffect(() => {
-    console.log('auth:', FIREBASE_AUTH); // Debug log to check auth instance
   }, []);
 
   const handlePasswordReset = async () => {

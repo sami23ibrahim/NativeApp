@@ -187,7 +187,7 @@
 // export default DeleteAccount;
 
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Button, Alert, StyleSheet, Modal, ActivityIndicator,TouchableOpacity } from 'react-native';
 import { getAuth, deleteUser, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { doc, deleteDoc, getDoc, updateDoc, arrayRemove, collection, getDocs } from 'firebase/firestore';
 import { deleteObject, ref } from 'firebase/storage';
@@ -322,9 +322,16 @@ const DeleteAccount = ({ navigation }) => {
   
 
   return (
-    <View>
+    <View style={styles.container}>
       <Text style={styles.title}>Delete Account</Text>
-      <Button title="Delete Account" onPress={() => setModalVisible(true)} color="red" />
+      <Text style={styles.warningText}>
+  Please ensure that you want to delete your account. Upon confirmation, you will lose access to all teams permanently, and all your data will be removed. This action is irreversible.
+</Text>
+
+      {/* <Button title="Delete Account" onPress={() => setModalVisible(true)} style={styles.button} /> */}
+      <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
+        <Text style={styles.buttonText}>Delete My Account</Text>
+      </TouchableOpacity>
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -342,35 +349,87 @@ const DeleteAccount = ({ navigation }) => {
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
                 secureTextEntry
+                placeholderTextColor={"white"}
                 style={styles.input}
               />
-              <Button title="Reauthenticate" onPress={handleReauthenticate} />
-              <Button title="Cancel" onPress={() => setModalVisible(false)} />
+  <View style={styles.modalButtonContainer}>
+
+
+  <TouchableOpacity style={styles.modalButton} onPress={handleReauthenticate}>
+              <Text style={styles.buttonText}>Reauthenticate</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalButton} onPress={() => setModalVisible(false)}>
+              <Text style={styles.buttonText}>Cancel</Text>
+            </TouchableOpacity>
+              </View>
             </>
           )}
         </View>
       </Modal>
     </View>
+
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 16,
+    backgroundColor: '#9cacbc',
+  },
+ 
   title: {
-    fontSize: 24,
+    fontSize: 28,
+    marginBottom: 10,
+    color: 'white',
+    textAlign: 'center',
+  },
+  button: {
+    width: '65%',
+    elevation: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
+    alignSelf: 'center',
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  modalButton: {
+    flex: 1,
+    elevation: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 5,
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     padding: 10,
     marginBottom: 20,
-    borderRadius: 5,
+    borderRadius: 25,color:'white',
   },
   modalView: {
     margin: 20,
-    backgroundColor: 'white',
+    backgroundColor: '#9cacbc',
     borderRadius: 20,
-    padding: 35,
+    padding: 31,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -379,8 +438,19 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   modalText: {
-    marginBottom: 15,
+    marginBottom: 25,
     textAlign: 'center',
+    fontSize: 18,
+    color: 'white',
+  },
+  warningText: {
+    color: 'red',
+    marginBottom: 30,
+    marginTop: 20,
+    textAlign: 'center',
+    width: '90%',
+    alignSelf: 'center',
+    fontSize: 17,
   },
 });
 

@@ -111,10 +111,8 @@
 
 
 
-
-
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, ActivityIndicator, StyleSheet, KeyboardAvoidingView, TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Button, Alert, ActivityIndicator, StyleSheet, KeyboardAvoidingView, TouchableOpacity, Image } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { FIREBASE_AUTH } from '../config/firebase';
 import { getAuth, sendEmailVerification } from "firebase/auth";
@@ -134,7 +132,6 @@ const Login = ({ navigation }) => {
         Alert.alert('Email not verified', 'Please verify your email before signing in. A new verification email has been sent.');
         await auth.signOut(); // Sign out the user
       } else {
-        console.log(response);
         navigation.navigate('Home'); // Navigate to Home screen upon successful login
       }
     } catch (error) {
@@ -148,11 +145,20 @@ const Login = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView behavior='padding'>
+        <View style={styles.imagePlaceholder}>
+        <Image source={require('../../assets/boxesShelves.png')} style={styles.image} />
+          {/* <Image source={{ uri: 'https://via.placeholder.com/150' }} style={styles.image} /> */}
+          
+        </View>
+
+        <View style={styles.imagePlaceholder}>
         <TextInput
           value={email}
           style={styles.input}
           placeholder="Email"
           autoCapitalize="none"
+          color="white"
+          placeholderTextColor={"white"}
           onChangeText={(text) => setEmail(text)}
         />
         <TextInput
@@ -160,18 +166,25 @@ const Login = ({ navigation }) => {
           value={password}
           style={styles.input}
           placeholder="Password"
+          placeholderTextColor={"white"}
+           color="white"
           onChangeText={(text) => setPassword(text)}
+          
         />
+        <TouchableOpacity style={styles.button} onPress={signIn}>
+              <Text style={styles.buttonText}>Login</Text>
+            </TouchableOpacity>
+         </View>
         {loading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
+          <ActivityIndicator size="large" color="white" />
         ) : (
           <>
-            <Button title="Login" onPress={signIn} />
+            
             <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
               <Text style={styles.signupText}>Create account</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.navigate('PasswordReset')}>
-              <Text style={styles.signupText}>forgot your password?</Text>
+              <Text style={styles.signupText}>Forgot your password?</Text>
             </TouchableOpacity>
           </>
         )}
@@ -184,19 +197,48 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 16,  backgroundColor: '#9cacbc',
+    padding: 16,
+    backgroundColor: '#9cacbc',
+  },
+  imagePlaceholder: {
+    alignItems: 'center',
+    marginBottom: 10,width: '100%',
+  },
+  image: {
+    width: 300,
+    height: 300,
+    borderRadius: 15,
   },
   input: {
     height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 12,
+    borderColor: '#ccc',
+    borderWidth: 1.3,
+    borderRadius: 20,
+    marginBottom: 15,
     paddingHorizontal: 8,
+    width: '88%',
+    backgroundColor: '#9cacbc',
   },
   signupText: {
-    color: 'blue',
-    marginTop: 10,
+    color: 'white',
+    marginTop: 20,
     textAlign: 'center',
+  },
+  button: {
+    width:'65%',
+    elevation: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Change this to your desired button color
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20, // Add some margin to separate the button from the list
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

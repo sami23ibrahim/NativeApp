@@ -277,7 +277,7 @@
 // export default JoinTeamModal;
 // JoinTeamModal.js
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Alert,TouchableOpacity } from 'react-native';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import { FIREBASE_AUTH } from '../config/firebase';
 import { NotificationContext } from './NotificationProvider'; // Correctly import NotificationContext
@@ -349,10 +349,24 @@ const JoinTeamModal = ({ setVisible, refreshTeams }) => {
         onChangeText={setTeamId}
         style={styles.input}
       />
-      <View style={styles.buttons}>
+      {/* <View style={styles.buttons}>
         <Button title="Send Request" padding={23} color={'#9cacbc'} onPress={handleJoinTeam} />
         <Button title="Cancel" color={'#9cacbc'} onPress={() => setVisible(false)} />
-      </View>
+      </View> */}
+      <View style={styles.buttonRow}>
+  <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleJoinTeam}>
+    <Text style={styles.buttonText}>Send Request</Text>
+  </TouchableOpacity>
+  <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => setVisible(false)}>
+    <Text style={styles.buttonText}>Cancel</Text>
+  </TouchableOpacity>
+</View>
+
+
+
+
+
+
     </View>
   );
 };
@@ -370,10 +384,32 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  buttons: {
+  button: {
+    elevation: 5,backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    padding: 10,
+    borderRadius: 5,  justifyContent: 'space-between',
+    marginVertical: 2,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 15,
+  },
+  cancelButton: {
+    width:'55%',
+    elevation: 5,
+    paddingVertical: 10,marginHorizontal: 5, // Add margin between the buttons
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Change this to your desired button color
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20, // Add some margin to separate the button from the list
+  },
+  buttonRow: {
     flexDirection: 'row',
-    padding: 20,
-    borderRadius: 40,
+    justifyContent: 'space-between', // Adjust this as needed
+    marginTop: 20, // Add some margin to separate from other elements
+   
   },
   modalTitle: {
     fontSize: 24,

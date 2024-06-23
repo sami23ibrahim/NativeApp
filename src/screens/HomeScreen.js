@@ -11,7 +11,7 @@ import { Menu, MenuOptions, MenuOption, MenuTrigger } from 'react-native-popup-m
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { MaterialCommunityIcons } from 'react-native-vector-icons';
-import UserSettingsScreen from './UserSettingsScreen';
+import UserSettingsScreen from '../screens/UserSettingsScreen';
 import LottieView from 'lottie-react-native'; // Import LottieView
 import NotificationTestScreen from '../screens/NotificationTestScreen';
 //import { NotificationContext } from '../components/NotificationProvider';
@@ -318,26 +318,48 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </TouchableOpacity>
         <Menu>
-          <MenuTrigger>
-            <Text style={styles.menuButton}>⋮</Text>
-          </MenuTrigger>
-          <MenuOptions>
-            {isOwner ? (
-              <>
-                <MenuOption onSelect={() => {
-                  setEditTeam(item);
-                  setTeamName(item.name);
-                  setImageUri(item.imageUrl);
-                  setModalType('edit');
-                  setModalVisible(true);
-                }} text="Edit" />
-                <MenuOption onSelect={() => confirmDeleteTeam(item.id)} text="Delete" />
-              </>
-            ) : (
-              <MenuOption onSelect={() => handleLeaveTeam(item.id)} text="Leave Team" />
-            )}
-          </MenuOptions>
-        </Menu>
+  <MenuTrigger>
+    <Text style={styles.menuButton}>⋮</Text>
+  </MenuTrigger>
+  <MenuOptions customStyles={{ optionsContainer: {
+     backgroundColor: '#9cacbc' ,
+     paddingVertical: 10,
+     borderRadius: 20,
+     paddingHorizontal: 15,
+     backgroundColor: 'rgba(172, 188, 198, 1.7)',
+     fontSize: 28,
+     color: 'white',
+     } }}>
+    {isOwner ? (
+      <>
+        <MenuOption
+          onSelect={() => {
+            setEditTeam(item);
+            setTeamName(item.name);
+            setImageUri(item.imageUrl);
+            setModalType('edit');
+            setModalVisible(true);
+          }}
+          text="Edit"
+          customStyles={{ optionText: { color: 'white', fontSize: 22, } }}
+        />
+        <MenuOption
+          onSelect={() => confirmDeleteTeam(item.id)}
+          text="Delete"
+          customStyles={{ optionText: { color: 'white', fontSize: 22, } }}
+        />
+      </>
+    ) : (
+      <MenuOption
+        onSelect={() => handleLeaveTeam(item.id)}
+        text="Leave Team"
+        customStyles={{ optionText: { color: 'white', fontSize: 22, } }}
+      />
+    )}
+  </MenuOptions>
+</Menu>
+
+
       </View>
     );
   };
@@ -368,21 +390,26 @@ const HomeScreen = ({ navigation }) => {
 
 
 
-   <NotificationBadge onPress={() => navigation.navigate('NotificationTest')} />
+   {/* <NotificationBadge onPress={() => navigation.navigate('NotificationTest')} />
+
+   <TouchableOpacity onPress={() => navigation.navigate('UserSettingsScreen')}>
+        <MaterialCommunityIcons name="cog" size={30} color="white" />
+   </TouchableOpacity>
+
+   <TouchableOpacity onPress={handleSignOut}>
+        <MaterialCommunityIcons name="logout" size={30} color="white" />
+   </TouchableOpacity> */}
 
 
 
 
-
-
-      <Button title="Settings" onPress={() => navigation.navigate('UserSettingsScreen')} />
       <Text style={styles.title}>MY TEAMS</Text>
       <View style={styles.listContainer}>
         {loadingTeams ? (
           <View style={styles.loadingContainer}>
  <Text style={styles.loadingText}>Loading...Hold tight!</Text>
             <LottieView
-              source={require('../../assets/loading.json')} // Adjust the path to your Lottie animation JSON file
+              source={require('../../assets/loading2.json')} // Adjust the path to your Lottie animation JSON file
               autoPlay
               loop
               style={styles.lottieAnimation}
@@ -407,7 +434,6 @@ const HomeScreen = ({ navigation }) => {
           </>
         )}
       </View>
-      <Button title="Sign Out" onPress={handleSignOut} />
       <Modal
         animationType="slide"
         transparent={true}
@@ -426,6 +452,7 @@ const HomeScreen = ({ navigation }) => {
                 placeholder="Team Name"
                 value={teamName}
                 onChangeText={setTeamName}
+                placeholderTextColor={"white"}
                 style={styles.input}
               />
               <TouchableOpacity onPress={selectImage}>
@@ -435,11 +462,21 @@ const HomeScreen = ({ navigation }) => {
                 />
               </TouchableOpacity>
               {loading ? (
-                <ActivityIndicator size="large" color="#0000ff" />
+                <ActivityIndicator size="large" color="white" />
               ) : (
                 <>
-                  <Button title="Update Team" onPress={handleEditTeam} />
-                  <Button title="Cancel" onPress={() => setModalVisible(false)} />
+         <View style={styles.buttonRow}>
+  <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={handleEditTeam}>
+    <Text style={styles.buttonText}>Update</Text>
+  </TouchableOpacity>
+  <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={() => setModalVisible(false)}>
+    <Text style={styles.buttonText}>Cancel</Text>
+  </TouchableOpacity>
+</View>
+
+            
+
+                   
                 </>
               )}
             </View>
@@ -467,6 +504,10 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </View>
       </Modal>
+
+      <View style={styles.buttonRow}>
+
+
       <TouchableOpacity
         style={[styles.button, styles.primaryButton]}
         onPress={() => {
@@ -474,7 +515,7 @@ const HomeScreen = ({ navigation }) => {
           setModalVisible(true);
         }}
       >
-        <Text style={styles.buttonText}>Create New Team</Text>
+        <Text style={styles.buttonText}>Create Team</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.button, styles.primaryButton]}
@@ -483,8 +524,11 @@ const HomeScreen = ({ navigation }) => {
           setModalVisible(true);
         }}
       >
-        <Text style={styles.buttonText}>Join Existing Team</Text>
+        <Text style={styles.buttonText}>Join Team</Text>
       </TouchableOpacity>
+      </View>
+
+
     </View>
   );
 };
@@ -502,6 +546,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 6,
     backgroundColor: '#9cacbc', // Change this to your desired background color
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between', // Adjust this as needed
+    marginTop: 20, // Add some margin to separate from other elements
+   
   },
   header: {
     flexDirection: 'row',
@@ -531,12 +581,20 @@ const styles = StyleSheet.create({
   button: {
     elevation: 5,backgroundColor: 'rgba(172, 188, 198, 1.7)',
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 5,  justifyContent: 'space-between',
     marginVertical: 2,
   },
   primaryButton: {
-    elevation: 5,backgroundColor: 'rgba(172, 188, 198, 1.7)',
-  },
+    elevation: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Change this to your desired button color
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20, // Add some margin to separate the button from the list  
+    marginHorizontal: 5, // Add margin between the buttons
+    },
   buttonText: {
     color: 'white',
     fontSize: 19,
@@ -610,8 +668,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   lottieAnimation: {
-    width: 450,
-    height: 450,
+    width: 650,
+    height: 750,
   },
   centeredView: {
     flex: 1,
@@ -628,7 +686,7 @@ const styles = StyleSheet.create({
   modalView: {
     width: '80%',
     
-    borderRadius: 10,
+    borderRadius: 40,
     padding: 20,
     alignItems: 'center',
     shadowColor: '#000',
@@ -654,24 +712,43 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   deleteButton: {
-    backgroundColor: 'red',
+    width:'45%',
+    elevation: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Change this to your desired button color
+    borderRadius: 90,
+    alignItems: 'center',
+    marginHorizontal: 5, // Add margin between the buttons
+    justifyContent: 'center',
+    marginBottom: 20, // Add some margin to separate the button from the list
   },
   cancelButton: {
-    backgroundColor: 'green',
+    width:'45%',
+    elevation: 5,
+    paddingVertical: 10,marginHorizontal: 5, // Add margin between the buttons
+    paddingHorizontal: 20,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Change this to your desired button color
+    borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20, // Add some margin to separate the button from the list
   },
   input: {
     height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
+    borderColor: '#ccc',
+    borderWidth: 1.4,
+    borderRadius: 20,
     marginBottom: 12,
     paddingHorizontal: 8,
-    width: 200,
+    width: 200,color: 'white',
   },
   image: {
     width: 150,
     height: 150,
     marginBottom: 20,
   },
+  
 });
 
 

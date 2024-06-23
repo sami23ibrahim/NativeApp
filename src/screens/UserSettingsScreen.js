@@ -422,23 +422,28 @@
 
 
 
-
-
-
-// src/screens/UserSettingsScreen.js
-
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import UpdateEmail from '../components/UpdateEmail';
-import ChangePassword from '../components/ChangePassword';
-import DeleteAccount from '../components/DeleteAccount';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons'; // Make sure to install @expo/vector-icons if you haven't
 
-const UserSettingsScreen = ({ navigation }) => {
+const UserSettingsScreen = () => {
+  const navigation = useNavigation();
+
   return (
     <View style={styles.container}>
-      <UpdateEmail navigation={navigation} />
-      <ChangePassword />
-      <DeleteAccount navigation={navigation} />
+      <TouchableOpacity style={styles.optionContainer} onPress={() => navigation.navigate('UpdateEmail')}>
+        <Text style={styles.optionText}>Update Email</Text>
+        <Ionicons name="arrow-forward" size={24} color="white" />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.optionContainer} onPress={() => navigation.navigate('ChangePassword')}>
+        <Text style={styles.optionText}>Change Password</Text>
+        <Ionicons name="arrow-forward" size={24} color="white" />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.optionContainer} onPress={() => navigation.navigate('DeleteAccount')}>
+        <Text style={styles.optionText}>Delete Account</Text>
+        <Ionicons name="arrow-forward" size={24} color="white" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -446,7 +451,21 @@ const UserSettingsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,backgroundColor: '#9cacbc',
+    padding: 20,
+    backgroundColor: '#9cacbc',
+  },
+  optionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    marginVertical: 10,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    borderRadius: 10,
+  },
+  optionText: {
+    fontSize: 18,
+    color: 'white',
   },
 });
 
