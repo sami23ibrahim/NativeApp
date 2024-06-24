@@ -556,7 +556,7 @@ const CreateTeamModal = ({ setVisible, refreshTeams }) => {
       />
       <TouchableOpacity onPress={selectImage} disabled={loading}>
         <Image
-          source={{ uri: imageUri || 'https://via.placeholder.com/150' }}
+          source={require('../../assets/addImg.png')} 
           style={styles.image}
         />
       </TouchableOpacity>
@@ -642,10 +642,10 @@ const styles = StyleSheet.create({
     width: 200,
   },
   image: {
-    width: 150,
-    height: 150,
+    width: 123,
+    height: 115,
     marginBottom: 20,
-    borderRadius: 30,
+    borderRadius:10,
 
   },
   buttons: {

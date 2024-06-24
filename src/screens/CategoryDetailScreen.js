@@ -2470,7 +2470,8 @@ const CategoryDetailScreen = () => {
       <Spacer height={80} />
       {items.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Image source={{ uri: 'https://via.placeholder.com/300' }} style={styles.emptyImage} />
+<Image source={require('../../assets/box2.png')} style={styles.emptyImage} />
+        
         </View>
       ) : null}
       <AnimatedFlatList
@@ -2594,7 +2595,7 @@ const CategoryDetailScreen = () => {
                   />
                   <TouchableOpacity onPress={selectItemImage} disabled={loading}>
                     <Image
-                      source={{ uri: itemImageUri || 'https://via.placeholder.com/150' }}
+                       source={require('../../assets/addImg.png')} 
                       style={[styles.image, { borderRadius: 20 }]} // Customizable border radius
                     />
                   </TouchableOpacity>
@@ -2692,9 +2693,10 @@ const styles = StyleSheet.create({
     width: 200,color: 'white',
   },
   image: {
-    width: 150,
-    height: 150,
+    width: 123,
+    height: 115,
     marginBottom: 20,
+    borderRadius:10,
   },
   itemContainer: {
     flexDirection: 'row',

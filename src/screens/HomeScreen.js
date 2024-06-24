@@ -292,10 +292,7 @@ const HomeScreen = ({ navigation }) => {
       Alert.alert('Error', 'Failed to leave team.');
     }
   };
-  // const handleNotificationPress = () => {
-  //   navigation.navigate('NotificationTest');
-  //   clearNotifications();
-  // };
+
   const renderTeamItem = ({ item }) => {
     const isOwner = item.owner.uid === user.uid;
 
@@ -374,35 +371,6 @@ const HomeScreen = ({ navigation }) => {
 
 
 
-      {/* <View style={styles.header}>
-        <TouchableOpacity onPress={handleNotificationPress} style={{ position: 'relative' }}>
-          <MaterialCommunityIcons name="bell-outline" size={30} color="white" />
-          {unreadCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={{ color: 'white' }}>{unreadCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View> */}
-   
-
-
-
-
-
-   {/* <NotificationBadge onPress={() => navigation.navigate('NotificationTest')} />
-
-   <TouchableOpacity onPress={() => navigation.navigate('UserSettingsScreen')}>
-        <MaterialCommunityIcons name="cog" size={30} color="white" />
-   </TouchableOpacity>
-
-   <TouchableOpacity onPress={handleSignOut}>
-        <MaterialCommunityIcons name="logout" size={30} color="white" />
-   </TouchableOpacity> */}
-
-
-
-
       <Text style={styles.title}>MY TEAMS</Text>
       <View style={styles.listContainer}>
         {loadingTeams ? (
@@ -419,18 +387,23 @@ const HomeScreen = ({ navigation }) => {
           </View>
         ) : (
           <>
-            {teams.length === 0 ? (
-              <Image
-                source={{ uri: 'https://via.placeholder.com/150' }} // Replace with your image URL
-                style={styles.noTeamsImage}
-              />
-            ) : (
-              <FlatList
-                data={teams}
-                keyExtractor={(item) => item.id}
-                renderItem={renderTeamItem}
-              />
-            )}
+          {teams.length === 0 ? (
+  <View style={styles.noTeamsContainer}>
+    <Text style={styles.noTeamsText}>
+    You are not currently a member of any teams. Please join an existing team or create your own!
+    </Text>
+    <Image
+      source={require('../../assets/noteam.png')}
+      style={styles.noTeamsImage}
+    />
+  </View>
+) : (
+  <FlatList
+    data={teams}
+    keyExtractor={(item) => item.id}
+    renderItem={renderTeamItem}
+  />
+)}
           </>
         )}
       </View>
@@ -615,10 +588,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(172, 188, 198, 0.33)', // Set background color with transparency (0.7 for 70% opacity)
     borderRadius: 30, // Add rounded corners
   },
+  noTeamsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   noTeamsImage: {
     width: 300,
-    height: 300,
-    marginBottom: 20,
+    height: 460,
+    marginBottom: 10, borderRadius: 30
+  },
+  noTeamsText: {
+    fontSize: 25,
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 30,
   },
   teamItem: {
     flexDirection: 'row',
@@ -744,7 +728,7 @@ const styles = StyleSheet.create({
     width: 200,color: 'white',
   },
   image: {
-    width: 150,
+    width: 150,borderRadius: 30,
     height: 150,
     marginBottom: 20,
   },

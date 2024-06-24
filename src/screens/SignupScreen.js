@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, ActivityIndicator, StyleSheet, Image, TouchableOpacity, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TextInput, Alert, ActivityIndicator, StyleSheet, Image, TouchableOpacity, KeyboardAvoidingView } from 'react-native';
 import { getAuth, createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc } from 'firebase/firestore';
 import { FIREBASE_AUTH, storage } from '../config/firebase';
@@ -27,7 +27,7 @@ const SignUpScreen = ({ navigation }) => {
       aspect: [4, 3],
       quality: 1,
     });
-    if (!result.cancelled) {
+    if (!result.canceled) {
       setImageUri(result.assets[0].uri);
     }
   };
@@ -62,10 +62,14 @@ const SignUpScreen = ({ navigation }) => {
   };
 
   const signUp = async () => {
+    if (!username || !email || !password || !imageUri) {
+      Alert.alert('Error', 'Please fill out all fields and select an image.');
+      return;
+    }
+
     setLoading(true);
     try {
       const response = await createUserWithEmailAndPassword(auth, email, password);
-
       const imageUrl = await uploadImage(imageUri, response.user.uid);
 
       await updateProfile(response.user, { displayName: username, photoURL: imageUrl });
@@ -77,11 +81,11 @@ const SignUpScreen = ({ navigation }) => {
         username: username,
         imageUrl: imageUrl,
         teams: [],
-        notifications: [] // Initialize the notifications array
+        notifications: []
       });
       console.log('User document created in Firestore');
 
-      sendEmailVerification(response.user);
+      await sendEmailVerification(response.user);
       console.log('Verification email sent');
       
       Alert.alert('Verification email sent!\nPlease check your email.');
@@ -97,11 +101,16 @@ const SignUpScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView behavior='padding'>
+        <Text style={styles.title}>Sign Up</Text>
+        <TouchableOpacity onPress={selectImage} style={styles.imagePlaceholder}>
+          <Image   source={require('../../assets/add.png')} style={styles.image} />
+        </TouchableOpacity>
         <TextInput
           value={username}
           style={styles.input}
           placeholder="Username"
           onChangeText={setUsername}
+          placeholderTextColor="white"
         />
         <TextInput
           value={email}
@@ -109,6 +118,7 @@ const SignUpScreen = ({ navigation }) => {
           placeholder="Email"
           autoCapitalize="none"
           onChangeText={setEmail}
+          placeholderTextColor="white"
         />
         <TextInput
           secureTextEntry={true}
@@ -116,10 +126,8 @@ const SignUpScreen = ({ navigation }) => {
           style={styles.input}
           placeholder="Password"
           onChangeText={setPassword}
+          placeholderTextColor="white"
         />
-        <TouchableOpacity onPress={selectImage} style={styles.imagePlaceholder}>
-          <Image source={{ uri: imageUri || 'https://via.placeholder.com/150' }} style={styles.image} />
-        </TouchableOpacity>
         {loading ? (
           <ActivityIndicator size="large" color="#0000ff" />
         ) : (
@@ -145,9 +153,16 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   image: {
-    width: 300,
-    height: 300,
-    borderRadius: 15,
+    width: 180,
+    height:180,
+    borderRadius: 0,
+  },
+  title: {
+    fontSize: 28,
+    marginBottom: 16,
+    textAlign: 'center',
+    fontWeight: 'bold',
+    color: 'white',
   },
   input: {
     height: 40,
@@ -158,6 +173,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     width: '88%',
     backgroundColor: '#9cacbc',
+    color: 'white',
+    alignSelf: 'center',
   },
   button: {
     width: '65%',
@@ -169,6 +186,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
+    alignSelf: 'center',
   },
   buttonText: {
     color: 'white',
