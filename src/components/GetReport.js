@@ -70,7 +70,7 @@ const GetReport = ({ categoryId }) => {
       <Text style={styles.timestamp}>Report generated on: {timestamp}</Text>
       {items.length === 0 ? (
         <View style={styles.noItemsContainer}>
-            <Text style={styles.title}>{categoryName} has No items </Text>
+            <Text style={styles.title}>{categoryName} Shelf has No items </Text>
           <Image
            source={require('../../assets/box.png')}
            

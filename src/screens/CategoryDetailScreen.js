@@ -2257,9 +2257,6 @@
 
 
 
-
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Image, TextInput, TouchableOpacity, Alert, StyleSheet, Modal, ActivityIndicator, Keyboard, Animated, FlatList } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -2282,7 +2279,7 @@ const CategoryDetailScreen = () => {
   const route = useRoute();
   const { categoryId, categoryName, teamName } = route.params;
   const [itemName, setItemName] = useState('');
-  const [itemImageUri, setItemImageUri] = useState('');
+  const [itemImageUri, setItemImageUri] = useState(null);
   const [items, setItems] = useState([]);
   const [editItem, setEditItem] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -2318,6 +2315,7 @@ const CategoryDetailScreen = () => {
         const member = teamData.members.find(m => m.uid === user.uid);
         if (member) {
           setIsAdmin(member.admin);
+          console.log('User role:', member.admin ? 'Admin' : 'Member'); // Debug statement
         }
       }
     } catch (error) {
@@ -2470,8 +2468,15 @@ const CategoryDetailScreen = () => {
       <Spacer height={80} />
       {items.length === 0 ? (
         <View style={styles.emptyContainer}>
-<Image source={require('../../assets/box2.png')} style={styles.emptyImage} />
-        
+          <Text style={styles.noCategories}>
+            This category has no items yet. {' '}
+            {isAdmin ? (
+              <Text style={styles.noCategories}>Add some items to start organizing your inventory!</Text>
+            ) : (
+              <Text style={styles.noCategories}>New items will appear here when added!</Text>
+            )}
+          </Text>
+          <Image source={require('../../assets/box2.png')} style={styles.emptyImage} />
         </View>
       ) : null}
       <AnimatedFlatList
@@ -2499,29 +2504,21 @@ const CategoryDetailScreen = () => {
               </View>
             </View>
             {isAdmin && (
-            <Menu>
-            <MenuTrigger>
-              <Text style={styles.menuButton}>⋮</Text>
-            </MenuTrigger>
-            <MenuOptions customStyles={{
-              optionsContainer: styles.optionsContainer
-            }}>
-              <MenuOption onSelect={() => editItemDetails(item)} text="Edit" customStyles={{
-                optionText: styles.optionText
-              }} />
-              <MenuOption onSelect={() => deleteItem(item.id, item.img)} text="Delete" customStyles={{
-                optionText: styles.optionText
-              }} />
-            </MenuOptions>
-          </Menu>
+              <Menu>
+                <MenuTrigger>
+                  <Text style={styles.menuButton}>⋮</Text>
+                </MenuTrigger>
+                <MenuOptions customStyles={{ optionsContainer: styles.optionsContainer }}>
+                  <MenuOption onSelect={() => editItemDetails(item)} text="Edit" customStyles={{ optionText: styles.optionText }} />
+                  <MenuOption onSelect={() => deleteItem(item.id, item.img)} text="Delete" customStyles={{ optionText: styles.optionText }} />
+                </MenuOptions>
+              </Menu>
             )}
           </View>
         )}
         ListFooterComponent={
           <>
             <Modal
-                      placeholderTextColor={"white"}
-
               animationType="slide"
               transparent={true}
               visible={modalVisible}
@@ -2536,17 +2533,16 @@ const CategoryDetailScreen = () => {
                 <View style={styles.modalView}>
                   <TextInput
                     placeholder="Item Name"
-                    placeholderTextColor={"white"}
                     value={itemName}
                     onChangeText={setItemName}
                     style={styles.input}
                     editable={!loading}
-                
+                    placeholderTextColor="white"
                   />
                   <TouchableOpacity onPress={selectItemImage} disabled={loading}>
                     <Image
                       source={{ uri: itemImageUri || 'https://via.placeholder.com/150' }}
-                      style={[styles.image, { borderRadius: 20 }]} // Customizable border radius
+                      style={[styles.image, { borderRadius: 20 }]}
                     />
                   </TouchableOpacity>
                   <View style={styles.buttonContainer}>
@@ -2595,8 +2591,8 @@ const CategoryDetailScreen = () => {
                   />
                   <TouchableOpacity onPress={selectItemImage} disabled={loading}>
                     <Image
-                       source={require('../../assets/addImg.png')} 
-                      style={[styles.image, { borderRadius: 20 }]} // Customizable border radius
+                      source={itemImageUri ? { uri: itemImageUri } : require('../../assets/addImg.png')}
+                      style={[styles.image, { borderRadius: 20 }]}
                     />
                   </TouchableOpacity>
                   <View style={styles.buttonContainer}>
@@ -2632,7 +2628,7 @@ const CategoryDetailScreen = () => {
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: true, listener: handleScroll }
         )}
-        contentContainerStyle={{ paddingTop: HEADER_HEIGHT }} // Adjust padding based on header height
+        contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}
       />
       {isAdmin && (
         <TouchableOpacity style={styles.floatingAddButton} onPress={() => {
@@ -2644,6 +2640,9 @@ const CategoryDetailScreen = () => {
     </View>
   );
 };
+
+
+
 
 const styles = StyleSheet.create({
   container: {
@@ -2660,10 +2659,25 @@ const styles = StyleSheet.create({
     color: 'white', // Your desired text color
     fontSize: 18,
   },
-
-
-
-
+  noCategories: {
+    fontSize: 28,marginTop: 120,
+    fontWeight: 'bold',
+    color: 'white',
+    textAlign: 'center',
+    marginVertical: 55,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+    paddingVertical: 10,
+  },
+  emptyImage: {
+    width: 330,
+    height: 200,
+    marginTop: 20,marginButtom: 90,
+  },
   header: {
     position: 'absolute',
     top: 0,
@@ -2864,15 +2878,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyImage: {
-    width: 300,
-    height: 300,
-  },
+
+ 
   floatingAddButton: {
     position: 'absolute',
     bottom: 20,

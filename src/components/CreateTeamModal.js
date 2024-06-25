@@ -443,8 +443,6 @@
 
 // export default CreateTeamModal;
 
-
-
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -454,11 +452,13 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 const CreateTeamModal = ({ setVisible, refreshTeams }) => {
   const [teamName, setTeamName] = useState('');
-  const [imageUri, setImageUri] = useState('');
-  const [loading, setLoading] = useState(false); // Add loading state
+  const [imageUri, setImageUri] = useState(null); // Initialize as null
+  const [loading, setLoading] = useState(false);
   const firestore = getFirestore();
   const user = FIREBASE_AUTH.currentUser;
+  const [userRole, setUserRole] = useState('');
 
+  
   const selectImage = async () => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permissionResult.granted === false) {
@@ -474,7 +474,7 @@ const CreateTeamModal = ({ setVisible, refreshTeams }) => {
     });
 
     if (!result.cancelled) {
-      setImageUri(result.assets[0].uri); // Using result.assets[0].uri for ImagePicker result
+      setImageUri(result.assets[0].uri); // Ensure it's a string
     }
   };
 
@@ -508,30 +508,28 @@ const CreateTeamModal = ({ setVisible, refreshTeams }) => {
       return;
     }
     
-    setLoading(true); // Set loading state to true
+    setLoading(true);
     try {
       const imageUrl = await uploadImage(imageUri);
       
-      // Fetch user details to get the imageUrl
       const userDocRef = doc(firestore, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
       const userImageUrl = userDoc.data().imageUrl;
-  
+
       const teamRef = await addDoc(collection(firestore, 'teams'), {
         name: teamName,
         imageUrl: imageUrl,
         owner: { name: user.displayName, uid: user.uid, imageUrl: userImageUrl },
         members: [{ name: user.displayName, uid: user.uid, imageUrl: userImageUrl, admin: true }],
       });
-  
-      // Add team to user's teams array
+
       await updateDoc(doc(firestore, 'users', user.uid), {
         teams: arrayUnion({
           teamId: teamRef.id,
           uid: user.uid
         })
       });
-  
+
       Alert.alert('Team created successfully!');
       setVisible(false);
       refreshTeams();
@@ -539,7 +537,7 @@ const CreateTeamModal = ({ setVisible, refreshTeams }) => {
       console.error('Error creating team: ', error);
       Alert.alert('Error', 'Failed to create team.');
     } finally {
-      setLoading(false); // Set loading state to false
+      setLoading(false);
     }
   };
 
@@ -552,37 +550,23 @@ const CreateTeamModal = ({ setVisible, refreshTeams }) => {
         placeholderTextColor='white'
         onChangeText={setTeamName}
         style={styles.input}
-        editable={!loading} // Disable input while loading
+        editable={!loading}
       />
       <TouchableOpacity onPress={selectImage} disabled={loading}>
         <Image
-          source={require('../../assets/addImg.png')} 
+          source={imageUri ? { uri: imageUri } : require('../../assets/addImg.png')}
           style={styles.image}
         />
       </TouchableOpacity>
-      
-      {/* <View style={styles.buttonRow}>
-      {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" />
-      ) : (
-        
-        <Button title="Create" color={'#9cacbc'} onPress={handleCreateTeam} />
-      )}
-    
-      <Button title="Cancel" style={ styles.cancelButton} onPress={() => setVisible(false)} disabled={loading} /> */}
-
       <View style={styles.buttonRow}>
-  <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleCreateTeam}>
-    <Text style={styles.buttonText}>Create</Text>
-  </TouchableOpacity>
-  <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => setVisible(false)} disabled={loading}>
-    <Text style={styles.buttonText}>Cancel</Text>
-  </TouchableOpacity>
-</View>
-
-
+        <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleCreateTeam}>
+          <Text style={styles.buttonText}>Create</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => setVisible(false)} disabled={loading}>
+          <Text style={styles.buttonText}>Cancel</Text>
+        </TouchableOpacity>
       </View>
-    // </View>
+    </View>
   );
 };
 

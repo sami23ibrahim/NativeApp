@@ -363,27 +363,17 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-
-
-
-
-
-
-
-
       <Text style={styles.title}>MY TEAMS</Text>
       <View style={styles.listContainer}>
         {loadingTeams ? (
           <View style={styles.loadingContainer}>
- <Text style={styles.loadingText}>Loading...Hold tight!</Text>
+             <Text style={styles.loadingText}>Loading...Hold tight!</Text>
             <LottieView
-              source={require('../../assets/loading2.json')} // Adjust the path to your Lottie animation JSON file
+              source={require('../../assets/loading2.json')} 
               autoPlay
               loop
               style={styles.lottieAnimation}
             />
-                                   
-
           </View>
         ) : (
           <>
@@ -570,7 +560,7 @@ const styles = StyleSheet.create({
     },
   buttonText: {
     color: 'white',
-    fontSize: 19,
+    fontSize: 19,fontWeight: 'bold',
   },
   title: {
     fontSize: 18,

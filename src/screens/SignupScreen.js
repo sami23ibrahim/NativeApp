@@ -10,7 +10,7 @@ const SignUpScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [imageUri, setImageUri] = useState('');
+  const [imageUri, setImageUri] = useState(null);
   const [loading, setLoading] = useState(false);
   const auth = FIREBASE_AUTH;
   const firestore = getFirestore();
@@ -103,7 +103,10 @@ const SignUpScreen = ({ navigation }) => {
       <KeyboardAvoidingView behavior='padding'>
         <Text style={styles.title}>Sign Up</Text>
         <TouchableOpacity onPress={selectImage} style={styles.imagePlaceholder}>
-          <Image   source={require('../../assets/add.png')} style={styles.image} />
+          <Image   
+          source={imageUri ? { uri: imageUri } : require('../../assets/add.png')}
+
+          style={styles.image} />
         </TouchableOpacity>
         <TextInput
           value={username}

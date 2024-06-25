@@ -1950,7 +1950,7 @@ const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 const CategoryListScreen = ({ navigation }) => {
   const [categories, setCategories] = useState([]);
   const [categoryName, setCategoryName] = useState('');
-  const [imageUri, setImageUri] = useState('');
+  const [imageUri, setImageUri] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -2202,22 +2202,26 @@ const CategoryListScreen = ({ navigation }) => {
         )}
         {menuVisible && menuCategory && menuCategory.id === item.id && (
           <View style={styles.menuContainer}>
+
+
+{userRole === 'admin' && (
+          <TouchableOpacity  onPress={() => {
+            setSelectedCategoryForReport(item.id);
+            
+          }}>
+            <Text style={styles.menuItem}>Inventory</Text>
+          </TouchableOpacity>
+        )}
             <TouchableOpacity onPress={() => openEditModal(item)}>
               <Text style={styles.menuItem}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => deleteCategory(item.id)}>
               <Text style={styles.menuItem}>Delete</Text>
             </TouchableOpacity>
+         
           </View>
         )}
-        {userRole === 'admin' && (
-          <TouchableOpacity style={styles.reportButton} onPress={() => {
-            console.log('Selected category ID for report:', item.id);
-            setSelectedCategoryForReport(item.id);
-          }}>
-            <Text style={styles.reportButtonText}>Get Report</Text>
-          </TouchableOpacity>
-        )}
+       
       </View>
     );
   };
@@ -2245,11 +2249,23 @@ const CategoryListScreen = ({ navigation }) => {
         <Spacer height={80} />
         {categories.length === 0 ? (
           <View style={styles.emptyContainer}>
-                      <Text style={styles.noCategories}>Team {teamName} has no Categories
-
+                      <Text style={styles.noCategories}>This Team Has No Shelves Yet. {''}
+                      {userRole !== 'admin' && (
+           <Text style={styles.noCategories}>
+              New Shlefs Will Appear Here When Added!
+         </Text>
+          )}
+                      {userRole === 'admin' && (
+           <Text style={styles.noCategories}>
+              Add some shelves to start organizing your items!
+         </Text>
+          )}
                       </Text>
 
-            <Image  source={require('../../assets/box2.png')} style={styles.emptyImage} />
+            <Image  
+            source={require('../../assets/box2.png')}
+             style={styles.emptyImage} />
+           
           </View>
         ) : (
           <AnimatedFlatList
@@ -2283,7 +2299,7 @@ const CategoryListScreen = ({ navigation }) => {
           </TouchableOpacity>
           {userRole === 'admin' && (
             <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
-              <Text style={styles.addButtonText}>+ add category</Text>
+              <Text style={styles.addButtonText}>+ add Shelf</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -2305,7 +2321,7 @@ const CategoryListScreen = ({ navigation }) => {
               />
               <TouchableOpacity onPress={selectImage}>
                 <Image
-                 source={require('../../assets/addImg.png')} 
+                 source={imageUri ? { uri: imageUri } : require('../../assets/addImg.png')}
                   style={[styles.image, { borderRadius: 20 }]} // Customizable border radius
                 />
               </TouchableOpacity>
@@ -2381,13 +2397,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
   },
-  noCategories: {
-    fontSize: 21,
-    zIndex: 1,
-    height: 53,
-    fontWeight: 'bold',
-    color: 'white',marginBottom:70,
-  },
+
   input: {
     height: 40,
     borderColor: '#ccc',
@@ -2545,13 +2555,20 @@ const styles = StyleSheet.create({
     color: 'white', // Your desired text color
     fontSize: 18,
   },
+  noCategories: {
+    fontSize: 25,
+    zIndex: 1,
+    height: 123,
+    fontWeight: 'bold',marginLeft:19,
+    color: 'white',marginBottom:1
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'center',paddingHorizontal: 30,
   },
   emptyImage: {
-    width: 460,
+    width: 430,
     height:300,
   },
   manageTeamButton: {
@@ -2589,12 +2606,12 @@ const styles = StyleSheet.create({
   menuContainer: {
     position: 'absolute',
     top: 40,
-    right: 20,
+    right: 30,
     backgroundColor: 'rgba(172, 188, 198, 1.7)',
     borderRadius: 10,
-    elevation: 5,
-    padding: 10,
-    zIndex: 2,
+    elevation: 10, // Ensure this value is high enough
+    padding: 8,
+    zIndex: 10, // Set a high zIndex value
   },
   reportContainer: {
     flex: 1,
@@ -2603,10 +2620,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#9cacbc',
   },
   menuItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    paddingVertical: 6,
+    paddingHorizontal: 19,
     backgroundColor: 'rgba(172, 188, 198, 1.7)',
-    fontSize: 18,
+    fontSize: 18,fontWeight: 'bold',
     color: 'white',
   },
   button: {
@@ -2627,10 +2644,10 @@ const styles = StyleSheet.create({
   },
   reportButton: {
     backgroundColor: '#6d8ea1',
-    borderRadius: 5,
+    borderRadius: 50,
     padding: 10,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 0,
   },
   reportButtonText: {
     color: 'white',
