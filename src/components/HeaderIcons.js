@@ -6,18 +6,24 @@ import NotificationBadge from './NotificationBadge'; // Ensure this import path 
 const HeaderIcons = ({ navigation, handleSignOut }) => {
   return (
     <View style={styles.container}>
+      
+{/* 
+
+
+      <TouchableOpacity onPress={() => navigation.navigate('Home')}>
+      <View style={styles.iconContainer}>
+        <MaterialCommunityIcons name="home" size={30} color="white" />
+      </View>
+    </TouchableOpacity>
+
+     <TouchableOpacity onPress={() => navigation.navigate('UserSettingsScreen')}>
+      <View style={styles.iconContainer}>
+        <MaterialCommunityIcons name="account" size={30} color="white" />
+      </View>
+    </TouchableOpacity>
+     */}
       <View style={styles.iconContainer}>
         <NotificationBadge onPress={() => navigation.navigate('NotificationTest')} />
-      </View>
-      <View style={styles.iconContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate('UserSettingsScreen')}>
-          <MaterialCommunityIcons name="cog" size={30} color="white" />
-        </TouchableOpacity>
-      </View>
-      <View style={styles.iconContainer}>
-        <TouchableOpacity onPress={handleSignOut}>
-          <MaterialCommunityIcons name="logout" size={30} color="white" />
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -30,8 +36,13 @@ const styles = StyleSheet.create({
     marginRight: 5, // Adjust this if needed for spacing from the right edge
   },
   iconContainer: {
-    marginHorizontal:30, // Adjust this for equal spacing between icons
+    backgroundColor: 'rgba(172, 188, 198, 0.33)',
+    borderRadius: 90, // Adjust this to make the background more or less rounded
+    padding: 10, // Adjust the padding to control the size of the background
+    justifyContent: 'center',
+    alignItems: 'center',marginHorizontal:30, // Adjust this for equal spacing between icons
   },
+
 });
 
 export default HeaderIcons;

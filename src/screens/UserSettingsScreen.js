@@ -420,14 +420,13 @@
 
 
 
-
-
+// src/screens/UserSettingsScreen.js
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons'; // Make sure to install @expo/vector-icons if you haven't
 
-const UserSettingsScreen = () => {
+const UserSettingsScreen = ({ handleSignOut }) => {
   const navigation = useNavigation();
 
   return (
@@ -442,6 +441,10 @@ const UserSettingsScreen = () => {
       </TouchableOpacity>
       <TouchableOpacity style={styles.optionContainer} onPress={() => navigation.navigate('DeleteAccount')}>
         <Text style={styles.optionText}>Delete Account</Text>
+        <Ionicons name="arrow-forward" size={24} color="white" />
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.optionContainer} onPress={handleSignOut}>
+        <Text style={styles.optionText}>Sign Out</Text>
         <Ionicons name="arrow-forward" size={24} color="white" />
       </TouchableOpacity>
     </View>

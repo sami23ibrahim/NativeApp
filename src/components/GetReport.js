@@ -37,7 +37,6 @@ const GetReport = ({ categoryId }) => {
       }));
       console.log('Fetched items with quantity > 0:', fetchedItems);
 
-      // If no items with quantity > 0, fetch all items for debugging
       if (fetchedItems.length === 0) {
         const allItemsSnapshot = await getDocs(collection(db, 'categories', categoryId, 'items'));
         const allItems = allItemsSnapshot.docs.map(doc => ({
@@ -59,7 +58,7 @@ const GetReport = ({ categoryId }) => {
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color="white" />
       </View>
     );
   }

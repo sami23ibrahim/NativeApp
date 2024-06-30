@@ -44,7 +44,7 @@ const CategorySearchBar = forwardRef(({ items, onSelect }, ref) => {
     <View style={styles.searchContainer}>
       <TextInput 
         style={styles.searchInput}
-        placeholder="Search categories..."
+        placeholder="Search Shelves..."
         placeholderTextColor='white'
         value={query}
         onChangeText={setQuery}

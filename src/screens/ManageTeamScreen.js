@@ -492,9 +492,8 @@
 
 // export default ManageTeamScreen;
 
-
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, Image, Button, Share,TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Alert, Image, Share, TouchableOpacity } from 'react-native';
 import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { FIREBASE_AUTH } from '../config/firebase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -611,27 +610,27 @@ const ManageTeamScreen = ({ route }) => {
     try {
       const teamRef = doc(firestore, 'teams', teamId);
       const userRef = doc(firestore, 'users', member.uid);
-  
+
       // Fetch the latest team document
       const teamDoc = await getDoc(teamRef);
       const teamData = teamDoc.data();
-  
+
       // Find the member object in the team members array
       const memberToRemove = teamData.members.find(m => m.uid === member.uid);
-  
+
       // Remove user from the team's members array
       await updateDoc(teamRef, {
         members: arrayRemove(memberToRemove)
       });
-  
+
       // Remove team from the user's teams array
       await updateDoc(userRef, {
         teams: arrayRemove({ teamId, uid: member.uid })
       });
-  
+
       // Update the team members state
       setTeamMembers((prevMembers) => prevMembers.filter((m) => m.uid !== member.uid));
-  
+
       Alert.alert('Success', 'User has been removed.');
     } catch (error) {
       console.error('Error removing user:', error);
@@ -671,22 +670,27 @@ const ManageTeamScreen = ({ route }) => {
         <Text style={styles.memberRole}>Pending</Text>
       </View>
       {isOwner && (
-        <View style={styles.requestActions}>
-          <Button title="Approve" onPress={() => handleRequest(item.id, 'approve')} />
-          <Button title="Reject" onPress={() => handleRequest(item.id, 'reject')} />
+      <View style={styles.requestActions}>
+      <TouchableOpacity onPress={() => handleRequest(item.id, 'approve')} style={styles.iconButton}>
+        <View style={styles.iconBackground}>
+          <MaterialCommunityIcons name="thumb-up" size={26} color="white" />
         </View>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => handleRequest(item.id, 'reject')} style={styles.iconButton}>
+        <View style={styles.iconBackground}>
+          <MaterialCommunityIcons name="thumb-down" size={26} color="white" />
+        </View>
+      </TouchableOpacity>
+    </View>
+    
+     
       )}
     </View>
   );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{teamName} Members:</Text> 
-
-      <TouchableOpacity style={styles.primaryButton} onPress={shareTeamId}>
-        <Text style={styles.buttonText}>Share Invitation Code</Text>
-      </TouchableOpacity>
-
+      <Text style={styles.title}>{teamName} Members:</Text>
       <FlatList
         data={teamMembers}
         keyExtractor={(item) => item.uid}
@@ -699,11 +703,12 @@ const ManageTeamScreen = ({ route }) => {
           />
         }
       />
+      <TouchableOpacity style={styles.primaryButton} onPress={shareTeamId}>
+        <Text style={styles.buttonText}>Share Invitation Code</Text>
+      </TouchableOpacity>
     </View>
   );
 };
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -728,9 +733,10 @@ const styles = StyleSheet.create({
     textAlign: 'center', // Ensures the text is centered
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     marginBottom: 20,
-    color: 'white',
+    color: '#f0f0f0',
+    fontWeight: 'bold',
   },
   memberItem: {
     flexDirection: 'row',
@@ -748,26 +754,37 @@ const styles = StyleSheet.create({
   },
   memberInfo: {
     flex: 1,
-    color: 'white',
+    color: '#f0f0f0',
   },
   nameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   memberName: {
-    fontSize: 18,
+    fontSize: 21,
     fontWeight: 'bold',
-    marginTop: 6,
-    color: 'white',
+    marginTop: 8,
+    color: '#f0f0f0',
   },
   memberRole: {
-    fontSize: 16,
-    marginTop: 0,
-    marginBottom: 12,
-    color: '#aaf0c9',
+    fontSize: 18,
+    marginTop: 6,
+    marginBottom: 10,
+    color: '#b2d3c2',
   },
   icon: {
-    marginLeft: 15,
+    marginLeft: 19,
+  },
+  iconButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconBackground: {
+    backgroundColor: 'rgba(172, 188, 198, 0.33)',
+    borderRadius: 50, // This makes the background a circle
+    padding: 10, // Adjust the padding to control the size of the background
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   requestActions: {
     flexDirection: 'row',

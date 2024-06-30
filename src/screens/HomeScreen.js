@@ -1,6 +1,5 @@
-
-import React, { useEffect, useState,useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Button, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { getAuth, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDoc, updateDoc, arrayRemove, deleteDoc, collection, getDocs } from 'firebase/firestore';
 import { FIREBASE_AUTH, FIREBASE_FIRESTORE, storage } from '../config/firebase';
@@ -11,14 +10,12 @@ import { Menu, MenuOptions, MenuOption, MenuTrigger } from 'react-native-popup-m
 import * as ImagePicker from 'expo-image-picker';
 import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { MaterialCommunityIcons } from 'react-native-vector-icons';
-import UserSettingsScreen from '../screens/UserSettingsScreen';
 import LottieView from 'lottie-react-native'; // Import LottieView
-import NotificationTestScreen from '../screens/NotificationTestScreen';
-//import { NotificationContext } from '../components/NotificationProvider';
 import NotificationBadge from '../components/NotificationBadge'; // Ensure this import is correct
+import HeaderIcons from '../components/HeaderIcons'; // Import the HeaderIcons component
+import ButtonTools from '../components/ButtonTools'; // Import the HeaderIcons component
 
 const HomeScreen = ({ navigation }) => {
-  
   const [teams, setTeams] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState(''); // 'create', 'join', or 'edit'
@@ -29,10 +26,35 @@ const HomeScreen = ({ navigation }) => {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState(null);
   const [loadingTeams, setLoadingTeams] = useState(true); // New state for loading teams
+  const [imagePickerModalVisible, setImagePickerModalVisible] = useState(false); // State for image picker modal
   const auth = FIREBASE_AUTH;
   const firestore = getFirestore();
   const user = auth.currentUser;
- // const { notifications, clearNotifications, unreadCount } = useContext(NotificationContext);
+
+  const buttons = [
+    {
+      iconName: 'account-cog',
+      label: '  Account ',
+      onPress: () => navigation.navigate('UserSettingsScreen'),
+    },
+    {
+      iconName: 'account-multiple-plus',
+      label: 'Create Team',
+      onPress:() => {
+        setModalType('create');
+        setModalVisible(true);
+      }
+    },
+    {
+      iconName: 'location-enter',
+      label: 'Join Team',
+      onPress:() => {
+        setModalType('join');
+        setModalVisible(true);
+      }
+    },
+  ];
+
   useEffect(() => {
     const fetchTeams = async () => {
       try {
@@ -64,7 +86,7 @@ const HomeScreen = ({ navigation }) => {
       } catch (error) {
         console.error('Error fetching teams: ', error);
       } finally {
-        setTimeout(() => setLoadingTeams(false), 1000); // Ensure loading screen stays for at least 3 seconds
+        setTimeout(() => setLoadingTeams(false), 100); // Ensure loading screen stays for at least 3 seconds
       }
     };
 
@@ -112,23 +134,28 @@ const HomeScreen = ({ navigation }) => {
     }
   };
 
-  const selectImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  const selectImage = async (source) => {
+    setImagePickerModalVisible(false);
+    let result;
 
-    if (permissionResult.granted === false) {
-      alert("You've refused to allow this app to access your photos!");
-      return;
+    if (source === 'camera') {
+      result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+    } else {
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
     if (!result.canceled) {
-      setImageUri(result.assets[0].uri); // Fixing the access to the URI
+      setImageUri(result.assets[0].uri);
     }
   };
 
@@ -165,25 +192,25 @@ const HomeScreen = ({ navigation }) => {
     try {
       const teamRef = doc(firestore, 'teams', editTeam.id);
       const teamDoc = await getDoc(teamRef);
-  
+
       // Get the current image URL
       const currentImageUrl = teamDoc.data().imageUrl;
-  
+
       // Upload the new image
       const imageUrl = await uploadImage(imageUri);
-  
+
       // Delete the old image if it exists
       if (currentImageUrl) {
         const oldImageRef = ref(storage, currentImageUrl);
         await deleteObject(oldImageRef);
       }
-  
+
       // Update the team document with the new image URL
       await updateDoc(teamRef, {
         name: teamName,
         imageUrl: imageUrl,
       });
-  
+
       Alert.alert('Team updated successfully!');
       setEditTeam(null);
       setTeamName('');
@@ -296,8 +323,6 @@ const HomeScreen = ({ navigation }) => {
   const renderTeamItem = ({ item }) => {
     const isOwner = item.owner.uid === user.uid;
 
-    
-
     return (
       <View style={styles.teamItemContainer}>
         <Text style={styles.teamDetail}></Text>
@@ -311,52 +336,69 @@ const HomeScreen = ({ navigation }) => {
             <View style={styles.nameContainer}>
               <Text style={styles.teamDetail}>By {item.owner.name.toUpperCase()}</Text>
             </View>
-            <Text style={styles.teamDetail}>Members: {item.members.length}</Text>
+            <Text style={styles.teamMembersDetail}>Members: {item.members.length}</Text>
           </View>
         </TouchableOpacity>
         <Menu>
-  <MenuTrigger>
-    <Text style={styles.menuButton}>⋮</Text>
-  </MenuTrigger>
-  <MenuOptions customStyles={{ optionsContainer: {
-     backgroundColor: '#9cacbc' ,
-     paddingVertical: 10,
-     borderRadius: 20,
-     paddingHorizontal: 15,
-     backgroundColor: 'rgba(172, 188, 198, 1.7)',
-     fontSize: 28,
-     color: 'white',
-     } }}>
-    {isOwner ? (
-      <>
-        <MenuOption
-          onSelect={() => {
-            setEditTeam(item);
-            setTeamName(item.name);
-            setImageUri(item.imageUrl);
-            setModalType('edit');
-            setModalVisible(true);
-          }}
-          text="Edit"
-          customStyles={{ optionText: { color: 'white', fontSize: 22, } }}
-        />
-        <MenuOption
-          onSelect={() => confirmDeleteTeam(item.id)}
-          text="Delete"
-          customStyles={{ optionText: { color: 'white', fontSize: 22, } }}
-        />
-      </>
-    ) : (
-      <MenuOption
-        onSelect={() => handleLeaveTeam(item.id)}
-        text="Leave Team"
-        customStyles={{ optionText: { color: 'white', fontSize: 22, } }}
-      />
-    )}
-  </MenuOptions>
-</Menu>
-
-
+          <MenuTrigger>
+            <MaterialCommunityIcons 
+              style={styles.menuButton} 
+              name="cog" size={24} color="white" 
+            />
+          </MenuTrigger>
+          <MenuOptions
+            customStyles={{
+              optionsContainer: {
+                backgroundColor: '#9cacbc',
+                paddingVertical: 10,
+                borderRadius: 20,
+                paddingHorizontal: 15,
+                backgroundColor: 'rgba(172, 188, 198, 1.7)',
+                fontSize: 28,
+                color: 'white',
+              },
+            }}
+          >
+            {isOwner ? (
+              <>
+                <MenuOption
+                  onSelect={() => {
+                    setEditTeam(item);
+                    setTeamName(item.name);
+                    setImageUri(item.imageUrl);
+                    setModalType('edit');
+                    setModalVisible(true);
+                  }}
+                  text="Edit"
+                  customStyles={{ optionText: { color: 'white', fontSize: 22 } }}
+                />
+                <MenuOption
+                  onSelect={() => confirmDeleteTeam(item.id)}
+                  text="Delete"
+                  customStyles={{ optionText: { color: 'white', fontSize: 22 } }}
+                />
+                <MenuOption
+                  onSelect={() => navigation.navigate('ManageTeam', { teamId: item.id, teamName: item.name })}
+                  text="Manage"
+                  customStyles={{ optionText: { color: 'white', fontSize: 22 } }}
+                />
+              </>
+            ) : (
+              <>
+                <MenuOption
+                  onSelect={() => handleLeaveTeam(item.id)}
+                  text="Leave Team"
+                  customStyles={{ optionText: { color: 'white', fontSize: 22 } }}
+                />
+                <MenuOption
+                  onSelect={() => navigation.navigate('ManageTeam', { teamId: item.id, teamName: item.name })}
+                  text="Manage"
+                  customStyles={{ optionText: { color: 'white', fontSize: 22 } }}
+                />
+              </>
+            )}
+          </MenuOptions>
+        </Menu>
       </View>
     );
   };
@@ -367,9 +409,8 @@ const HomeScreen = ({ navigation }) => {
       <View style={styles.listContainer}>
         {loadingTeams ? (
           <View style={styles.loadingContainer}>
-             <Text style={styles.loadingText}>Loading...Hold tight!</Text>
             <LottieView
-              source={require('../../assets/loading2.json')} 
+              source={require('../../assets/loading4.json')} 
               autoPlay
               loop
               style={styles.lottieAnimation}
@@ -377,23 +418,16 @@ const HomeScreen = ({ navigation }) => {
           </View>
         ) : (
           <>
-          {teams.length === 0 ? (
-  <View style={styles.noTeamsContainer}>
-    <Text style={styles.noTeamsText}>
-    You are not currently a member of any teams. Please join an existing team or create your own!
-    </Text>
-    <Image
-      source={require('../../assets/noteam.png')}
-      style={styles.noTeamsImage}
-    />
-  </View>
-) : (
-  <FlatList
-    data={teams}
-    keyExtractor={(item) => item.id}
-    renderItem={renderTeamItem}
-  />
-)}
+            {teams.length === 0 ? (
+              <View style={styles.noTeamsContainer}>
+                <Text style={styles.noTeamsText}>
+                  You are not currently a member of any teams. Please join an existing team or create your own!
+                </Text>
+                <Image source={require('../../assets/noteam.png')} style={styles.noTeamsImage} />
+              </View>
+            ) : (
+              <FlatList data={teams} keyExtractor={(item) => item.id} renderItem={renderTeamItem} />
+            )}
           </>
         )}
       </View>
@@ -418,34 +452,52 @@ const HomeScreen = ({ navigation }) => {
                 placeholderTextColor={"white"}
                 style={styles.input}
               />
-              <TouchableOpacity onPress={selectImage}>
-                <Image
-                  source={{ uri: imageUri || 'https://via.placeholder.com/150' }}
-                  style={styles.image}
-                />
+              <TouchableOpacity onPress={() => setImagePickerModalVisible(true)}>
+                <Image source={{ uri: imageUri || 'https://via.placeholder.com/150' }} style={styles.image} />
               </TouchableOpacity>
               {loading ? (
                 <ActivityIndicator size="large" color="white" />
               ) : (
                 <>
-         <View style={styles.buttonRow}>
-  <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={handleEditTeam}>
-    <Text style={styles.buttonText}>Update</Text>
-  </TouchableOpacity>
-  <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={() => setModalVisible(false)}>
-    <Text style={styles.buttonText}>Cancel</Text>
-  </TouchableOpacity>
-</View>
-
-            
-
-                   
+                  <View style={styles.buttonRow}>
+                    <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={handleEditTeam}>
+                      <Text style={styles.buttonText}>Update</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.button, styles.deleteButton]} onPress={() => setModalVisible(false)}>
+                      <Text style={styles.buttonText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
                 </>
               )}
             </View>
           </View>
         )}
       </Modal>
+      <Modal
+  transparent={true}
+  visible={imagePickerModalVisible}
+  animationType="slide"
+  onRequestClose={() => setImagePickerModalVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.imagePickerModal}>
+      <Text style={styles.imagePickerTitle}>Select Image</Text>
+      <Text style={styles.imagePickerSubtitle}>Choose the source of the image</Text>
+      <View style={styles.imagePickerOptions}>
+        <TouchableOpacity onPress={() => selectImage('camera')}>
+          <Text style={styles.imagePickerOptionText}>Camera</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => selectImage('library')}>
+          <Text style={styles.imagePickerOptionText}>Library</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setImagePickerModalVisible(false)}>
+          <Text style={styles.imagePickerOptionText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
       <Modal
         animationType="slide"
         transparent={true}
@@ -468,39 +520,10 @@ const HomeScreen = ({ navigation }) => {
         </View>
       </Modal>
 
-      <View style={styles.buttonRow}>
-
-
-      <TouchableOpacity
-        style={[styles.button, styles.primaryButton]}
-        onPress={() => {
-          setModalType('create');
-          setModalVisible(true);
-        }}
-      >
-        <Text style={styles.buttonText}>Create Team</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[styles.button, styles.primaryButton]}
-        onPress={() => {
-          setModalType('join');
-          setModalVisible(true);
-        }}
-      >
-        <Text style={styles.buttonText}>Join Team</Text>
-      </TouchableOpacity>
-      </View>
-
-
+      <ButtonTools buttons={buttons} />
     </View>
   );
 };
-
-
-
-
-
-
 
 const styles = StyleSheet.create({
   container: {
@@ -510,11 +533,11 @@ const styles = StyleSheet.create({
     padding: 6,
     backgroundColor: '#9cacbc', // Change this to your desired background color
   },
+  
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between', // Adjust this as needed
     marginTop: 20, // Add some margin to separate from other elements
-   
   },
   header: {
     flexDirection: 'row',
@@ -557,16 +580,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20, // Add some margin to separate the button from the list  
     marginHorizontal: 5, // Add margin between the buttons
-    },
+  },
   buttonText: {
     color: 'white',
     fontSize: 19,fontWeight: 'bold',
   },
   title: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginVertical: 10,
-    color: 'white',
+    marginVertical: 8,
+    color: '#f0f0f0',
   },
   teamItemContainer: {
     flexDirection: 'row',
@@ -615,18 +638,24 @@ const styles = StyleSheet.create({
   teamName: {
     fontWeight: 'bold',
     fontSize: 22,
-    color: 'white',
+    color: '#f0f0f0',
   },
   teamDetail: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#f0f0f0',
+    marginTop: 6,
+  },
+  teamMembersDetail: {
+    fontSize: 15,
+    //fontWeight: 'bold',
+    color: '#f0f0f0',
     marginTop: 6,
   },
   menuButton: {
     color: 'white',
-    fontSize: 30,
-    padding: 10,
+    fontSize: 28,
+    padding:16,
   },
   icon: {
     marginLeft: 15,
@@ -642,8 +671,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   lottieAnimation: {
-    width: 650,
-    height: 750,
+    width: 350,
+    height: 350,
   },
   centeredView: {
     flex: 1,
@@ -659,7 +688,6 @@ const styles = StyleSheet.create({
   },
   modalView: {
     width: '80%',
-    
     borderRadius: 40,
     padding: 20,
     alignItems: 'center',
@@ -722,11 +750,39 @@ const styles = StyleSheet.create({
     height: 150,
     marginBottom: 20,
   },
-  
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePickerModal: {
+    width: '80%',
+    backgroundColor: 'rgba(172, 188, 198, 1.1)',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  imagePickerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 10,
+  },
+  imagePickerSubtitle: {
+    fontSize: 16,
+    color: 'white',
+    marginBottom: 20,
+  },
+  imagePickerOptions: {
+    width: '100%',
+  },
+  imagePickerOptionText: {
+    fontSize: 21,
+    color: 'white',
+    padding: 8,
+    textAlign: 'center',
+  },
 });
 
-
 export default HomeScreen;
-
-
-

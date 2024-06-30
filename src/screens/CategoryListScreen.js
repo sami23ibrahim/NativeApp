@@ -1928,9 +1928,6 @@
 // });
 
 // export default CategoryListScreen;
-
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Dimensions, Modal, TextInput, Alert, ActivityIndicator, TouchableWithoutFeedback, Animated, Keyboard } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -1942,6 +1939,8 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { FIREBASE_AUTH } from '../config/firebase';
 import CategorySearchBar from '../components/CategorySearchBar';
 import GetReport from '../components/GetReport'; // Import GetReport
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import ButtonTools from '../components/ButtonTools'; // Import the HeaderIcons component
 
 const HEADER_HEIGHT = 92;
 
@@ -1957,7 +1956,9 @@ const CategoryListScreen = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [menuCategory, setMenuCategory] = useState(null);
   const [userRole, setUserRole] = useState('');
+  const [loadingRole, setLoadingRole] = useState(true); // New state for loading role
   const [selectedCategoryForReport, setSelectedCategoryForReport] = useState(null); // Add state for report
+  const [imagePickerModalVisible, setImagePickerModalVisible] = useState(false); // New state for image picker modal
   const route = useRoute();
   const { teamId, teamName } = route.params;
   const numColumns = 2;
@@ -1986,6 +1987,7 @@ const CategoryListScreen = ({ navigation }) => {
   }, [teamId, teamName, navigation]);
 
   const fetchCategoriesAndRole = async () => {
+    setLoadingRole(true); // Set loading to true
     const q = query(collection(db, 'categories'), where('teamId', '==', teamId));
     const querySnapshot = await getDocs(q);
     const fetchedCategories = querySnapshot.docs.map(doc => ({
@@ -2003,24 +2005,78 @@ const CategoryListScreen = ({ navigation }) => {
         setUserRole(member.admin ? 'admin' : 'member');
       }
     }
+    setLoadingRole(false); // Set loading to false
   };
 
-  const selectImage = async () => {
-    const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Sorry, we need camera roll permissions to make this work!');
-      return;
-    }
+  const openAddModal = () => {
+    setSelectedCategory(null);
+    setCategoryName('');
+    setImageUri('');
+    setModalVisible(true);
+  };
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+  const buttons = [
+    {
+      iconName: 'account-cog',
+      label: 'Account',
+      onPress: () => navigation.navigate('UserSettingsScreen'),
+    },
+    {
+      iconName: 'home',
+      label: 'Home',
+      onPress: () => navigation.navigate('Home'),
+    },
+    {
+      iconName: 'plus-thick',
+      label: 'Add Shelf',
+      onPress: openAddModal,
+    },
+  ];
+
+  const buttons2 = [
+    {
+      iconName: 'account-cog',
+      label: 'Account',
+      onPress: () => navigation.navigate('UserSettingsScreen'),
+    },
+    {
+      iconName: 'home',
+      label: 'Home',
+      onPress: () => navigation.navigate('Home'),
+    },
+  ];
+
+  const selectImage = async (source) => {
+    let result;
+    if (source === 'camera') {
+      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+      if (cameraPermission.granted === false) {
+        alert("You've refused to allow this app to access your camera!");
+        return;
+      }
+      result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+    } else {
+      const libraryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (libraryPermission.granted === false) {
+        alert("You've refused to allow this app to access your photos!");
+        return;
+      }
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+    }
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       setImageUri(result.assets[0].uri);
+      setImagePickerModalVisible(false); // Close the image picker modal
     }
   };
 
@@ -2066,14 +2122,14 @@ const CategoryListScreen = ({ navigation }) => {
         img: imageUrl,
         teamId: teamId,
       });
-      Alert.alert('Category added!', 'Your category has been added successfully.');
+      Alert.alert('Shelf added!', 'Your Shelf has been added successfully.');
       setCategoryName('');
       setImageUri('');
       setModalVisible(false);
       fetchCategoriesAndRole();
     } catch (error) {
-      console.error('Error adding category:', error);
-      Alert.alert('Error', `There was an error adding your category: ${error.message}`);
+      console.error('Error adding Shelf:', error);
+      Alert.alert('Error', `There was an error adding your Shelf: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -2101,15 +2157,15 @@ const CategoryListScreen = ({ navigation }) => {
         img: imageUrl,
       });
 
-      Alert.alert('Category updated!', 'Your category has been updated successfully.');
+      Alert.alert('Shelf updated!', 'Your Shelf has been updated successfully.');
       setSelectedCategory(null);
       setCategoryName('');
       setImageUri('');
       setModalVisible(false);
       fetchCategoriesAndRole();
     } catch (error) {
-      console.error('Error updating category:', error);
-      Alert.alert('Error', `There was an error updating your category: ${error.message}`);
+      console.error('Error updating Shelf:', error);
+      Alert.alert('Error', `There was an error updating your Shelf: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -2139,14 +2195,14 @@ const CategoryListScreen = ({ navigation }) => {
 
         await deleteDoc(categoryRef);
 
-        Alert.alert('Category deleted!', 'Your category and its items have been deleted successfully.');
+        Alert.alert('Shelf removed!', 'Your Shelf and its items have been removed successfully.');
         fetchCategoriesAndRole();
       } else {
-        Alert.alert('Error', 'Category not found.');
+        Alert.alert('Error', 'Shelf not found.');
       }
     } catch (error) {
-      console.error('Error deleting category:', error);
-      Alert.alert('Error', `There was an error deleting your category: ${error.message}`);
+      console.error('Error removing Shelf:', error);
+      Alert.alert('Error', `There was an error removing your Shelf: ${error.message}`);
     }
   };
 
@@ -2191,37 +2247,29 @@ const CategoryListScreen = ({ navigation }) => {
 
     return (
       <View style={[styles.categoryContainer, { width: itemWidth, height: itemWidth }]}>
-        <TouchableOpacity onPress={() => navigation.navigate('CategoryDetailScreen', { categoryId: item.id, categoryName: item.name, teamName })} style={styles.categoryContent}>
+        <TouchableOpacity onPress={() => navigation.navigate('CategoryDetailScreen', 
+          { categoryId: item.id, categoryName: item.name, teamName })} style={styles.categoryContent}>
           <Image source={{ uri: item.img }} style={styles.categoryImage} />
           <Text style={styles.categoryName}>{item.name}</Text>
         </TouchableOpacity>
         {userRole === 'admin' && (
           <TouchableOpacity onPress={() => openMenu(item)} style={styles.menuButton}>
-            <MaterialIcons name="more-vert" size={30} color="white" />
+            <MaterialCommunityIcons name="cog" size={24} color="white" />
           </TouchableOpacity>
         )}
         {menuVisible && menuCategory && menuCategory.id === item.id && (
           <View style={styles.menuContainer}>
-
-
-{userRole === 'admin' && (
-          <TouchableOpacity  onPress={() => {
-            setSelectedCategoryForReport(item.id);
-            
-          }}>
-            <Text style={styles.menuItem}>Inventory</Text>
-          </TouchableOpacity>
-        )}
+            <TouchableOpacity onPress={() => setSelectedCategoryForReport(item.id)}>
+              <Text style={styles.menuItem}>Inventory</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={() => openEditModal(item)}>
               <Text style={styles.menuItem}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => deleteCategory(item.id)}>
-              <Text style={styles.menuItem}>Delete</Text>
+              <Text style={styles.menuItem}>Remove</Text>
             </TouchableOpacity>
-         
           </View>
         )}
-       
       </View>
     );
   };
@@ -2232,133 +2280,141 @@ const CategoryListScreen = ({ navigation }) => {
     extrapolate: 'clamp',
   });
 
-  const openAddModal = () => {
-    setSelectedCategory(null);
-    setCategoryName('');
-    setImageUri('');
-    setModalVisible(true);
-  };
-
   return (
     <TouchableWithoutFeedback onPress={closeMenu}>
-      <View style={styles.container}>
-        <Animated.View style={[styles.header, { transform: [{ translateY: headerTranslateY }] }]}>
-          <Text style={styles.teamName}>{teamName}</Text>
-          {categories.length > 0 && <CategorySearchBar ref={searchBarRef} items={categories} onSelect={handleItemSelect} />}
-        </Animated.View>
-        <Spacer height={80} />
-        {categories.length === 0 ? (
-          <View style={styles.emptyContainer}>
-                      <Text style={styles.noCategories}>This Team Has No Shelves Yet. {''}
-                      {userRole !== 'admin' && (
-           <Text style={styles.noCategories}>
-              New Shlefs Will Appear Here When Added!
-         </Text>
-          )}
-                      {userRole === 'admin' && (
-           <Text style={styles.noCategories}>
-              Add some shelves to start organizing your items!
-         </Text>
-          )}
-                      </Text>
-
-            <Image  
-            source={require('../../assets/box2.png')}
-             style={styles.emptyImage} />
-           
-          </View>
-        ) : (
-          <AnimatedFlatList
-            ref={flatListRef}
-            data={categories}
-            keyExtractor={(item) => item.id}
-            renderItem={renderCategoryItem}
-            numColumns={numColumns}
-            initialNumToRender={categories.length}
-            maxToRenderPerBatch={categories.length}
-            contentContainerStyle={styles.list}
-            onScroll={Animated.event(
-              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-              { useNativeDriver: true, listener: handleScroll }
-            )}
-            onScrollToIndexFailed={(info) => {
-              console.warn('scrollToIndex failed', info);
-              const wait = new Promise(resolve => setTimeout(resolve, 500));
-              wait.then(() => {
-                flatListRef.current?.scrollToIndex({
-                  index: info.index,
-                  animated: true,
-                });
-              });
-            }}
-          />
-        )}
-        <View style={styles.buttonRow}>
-          <TouchableOpacity onPress={() => navigation.navigate('ManageTeam', { teamId, teamName })} style={styles.manageTeamButton}>
-            <Text style={styles.manageTeamButtonText}>Manage Team</Text>
-          </TouchableOpacity>
-          {userRole === 'admin' && (
-            <TouchableOpacity style={styles.addButton} onPress={openAddModal}>
-              <Text style={styles.addButtonText}>+ add Shelf</Text>
-            </TouchableOpacity>
-          )}
+      {loadingRole ? ( // Show a loading indicator while the role is being fetched
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="white" />
         </View>
-        <Modal
-          placeholderTextColor={"white"}
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalView}>
-              <TextInput
-                placeholder="Category Name"
-                value={categoryName}
-                onChangeText={setCategoryName}
-                style={styles.input}
-                placeholderTextColor="white"
-              />
-              <TouchableOpacity onPress={selectImage}>
-                <Image
-                 source={imageUri ? { uri: imageUri } : require('../../assets/addImg.png')}
-                  style={[styles.image, { borderRadius: 20 }]} // Customizable border radius
-                />
-              </TouchableOpacity>
-              <View style={styles.buttonContainer}>
-                {loading ? (
-                  <ActivityIndicator size="large" color="#0000ff" />
-                ) : (
-                  <>
-                    <TouchableOpacity style={[styles.button, styles.addCategoryButton]} onPress={selectedCategory ? editCategory : addCategory}>
-                      <Text style={styles.buttonText}>{selectedCategory ? "Update" : "   Add    "}</Text>
-                    </TouchableOpacity>
-                    <View style={styles.buttonSpacing} />
-                    <TouchableOpacity style={[styles.button, styles.addCategoryButton]} onPress={() => setModalVisible(false)}>
-                      <Text style={styles.buttonText}>Cancel</Text>
-                    </TouchableOpacity>
-                  </>
+      ) : (
+        <View style={styles.container}>
+          <Animated.View style={[styles.header, { transform: [{ translateY: headerTranslateY }] }]}>
+            <Text style={styles.teamName}>{teamName}</Text>
+            {categories.length > 0 && <CategorySearchBar ref={searchBarRef} items={categories} onSelect={handleItemSelect} />}
+          </Animated.View>
+          <Spacer height={80} />
+          {categories.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.noCategories}>
+                This Team Has No Shelves Yet. {''}
+                {userRole !== 'admin' && (
+                  <Text style={styles.noCategories}>New Shelves Will Appear Here When Added!</Text>
                 )}
+                {userRole === 'admin' && (
+                  <Text style={styles.noCategories}>Add some shelves to start organizing your items!</Text>
+                )}
+              </Text>
+              <Image source={require('../../assets/box2.png')} style={styles.emptyImage} />
+            </View>
+          ) : (
+            <AnimatedFlatList
+              ref={flatListRef}
+              data={categories}
+              keyExtractor={(item) => item.id}
+              renderItem={renderCategoryItem}
+              numColumns={numColumns}
+              initialNumToRender={categories.length}
+              maxToRenderPerBatch={categories.length}
+              contentContainerStyle={styles.list}
+              onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+                { useNativeDriver: true, listener: handleScroll }
+              )}
+              onScrollToIndexFailed={(info) => {
+                console.warn('scrollToIndex failed', info);
+                const wait = new Promise(resolve => setTimeout(resolve, 500));
+                wait.then(() => {
+                  flatListRef.current?.scrollToIndex({
+                    index: info.index,
+                    animated: true,
+                  });
+                });
+              }}
+            />
+          )}
+          {userRole === 'admin' && <ButtonTools buttons={buttons} />}
+          {userRole !== 'admin' && <ButtonTools buttons={buttons2} />}
+          <Modal
+            placeholderTextColor={"white"}
+            animationType="slide"
+            transparent={true}
+            visible={modalVisible}
+            onRequestClose={() => setModalVisible(false)}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalView}>
+                <TextInput
+                  placeholder="Shelf Name"
+                  value={categoryName}
+                  onChangeText={setCategoryName}
+                  style={styles.input}
+                  placeholderTextColor="white"
+                />
+                <TouchableOpacity onPress={() => setImagePickerModalVisible(true)}>
+                  <Image
+                    source={imageUri ? { uri: imageUri } : require('../../assets/addImg.png')}
+                    style={[styles.image, { borderRadius: 20 }]} // Customizable border radius
+                  />
+                </TouchableOpacity>
+                <View style={styles.buttonContainer}>
+                  {loading ? (
+                    <ActivityIndicator size="large" color="white" style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} />
+                  ) : (
+                    <>
+                      <TouchableOpacity style={[styles.button, styles.addCategoryButton]} onPress={selectedCategory ? editCategory : addCategory}>
+                        <Text style={styles.buttonText}>{selectedCategory ? "Update" : "   Add    "}</Text>
+                      </TouchableOpacity>
+                      <View style={styles.buttonSpacing} />
+                      <TouchableOpacity style={[styles.button, styles.addCategoryButton]} onPress={() => setModalVisible(false)}>
+                        <Text style={styles.buttonText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
               </View>
             </View>
-          </View>
-        </Modal>
-        {selectedCategoryForReport && ( // Add modal to show the report
+          </Modal>
           <Modal
+            transparent={true}
+            visible={imagePickerModalVisible}
             animationType="slide"
-            transparent={false}
-            visible={true}
-            onRequestClose={() => setSelectedCategoryForReport(null)}
+            onRequestClose={() => setImagePickerModalVisible(false)}
           >
-            <View style={styles.reportContainer}>
-              <GetReport categoryId={selectedCategoryForReport} />
-              <TouchableOpacity style={styles.button} onPress={() => setSelectedCategoryForReport(null)}>
-                <Text style={styles.buttonText}>Close</Text>
-              </TouchableOpacity>
+            <View style={styles.modalOverlay}>
+              <View style={styles.imagePickerModal}>
+                <Text style={styles.imagePickerTitle}>Select Image</Text>
+                <Text style={styles.imagePickerSubtitle}>Choose the source of the image</Text>
+                <View style={styles.imagePickerOptions}>
+                  <TouchableOpacity onPress={() => selectImage('camera')}>
+                    <Text style={styles.imagePickerOptionText}>Camera</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => selectImage('library')}>
+                    <Text style={styles.imagePickerOptionText}>Library</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setImagePickerModalVisible(false)}>
+                    <Text style={styles.imagePickerOptionText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
           </Modal>
-        )}
-      </View>
+          {selectedCategoryForReport && ( // Add modal to show the report
+            <Modal
+              animationType="slide"
+              transparent={false}
+              visible={true}
+              onRequestClose={() => setSelectedCategoryForReport(null)}
+            >
+              <View style={styles.reportContainer}>
+                <GetReport categoryId={selectedCategoryForReport} />
+                <TouchableOpacity style={styles.Xbutton} onPress={() => setSelectedCategoryForReport(null)}>
+                  <Text style={styles.XbuttonText}>X</Text>
+                </TouchableOpacity>
+              </View>
+            </Modal>
+          )}
+        </View>
+      )}
     </TouchableWithoutFeedback>
   );
 };
@@ -2371,6 +2427,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#9cacbc',
+    justifyContent: 'center', // Ensure alignment of child components
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center', backgroundColor: '#9cacbc',
+    alignItems: 'center',
   },
   reportContainer: {
     flex: 1,
@@ -2395,9 +2457,23 @@ const styles = StyleSheet.create({
     zIndex: 1,
     height: 43,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#f0f0f0',
   },
-
+  floatingAddButton: {
+    position: 'absolute',
+    bottom: 50,
+    right: 27,
+    backgroundColor: '#9cacbc',
+    borderRadius: 90,
+    padding: 35,
+    elevation: 5,
+    height: 90,
+  },
+  floatingAddButtonText: {
+    color: 'white',
+    fontSize: 36,
+    fontWeight: 'bold',marginBottom: 2,
+  },
   input: {
     height: 40,
     borderColor: '#ccc',
@@ -2412,7 +2488,7 @@ const styles = StyleSheet.create({
     width: 123,
     height: 115,
     marginBottom: 20,
-    borderRadius:10,
+    borderRadius: 10,
   },
   categoryContainer: {
     marginBottom: 16,
@@ -2452,7 +2528,7 @@ const styles = StyleSheet.create({
     paddingTop: 1,
     fontSize: 18,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#f0f0f0',
   },
   list: {
     justifyContent: 'space-between',
@@ -2496,6 +2572,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20, // Add some margin to separate the button from the list
   },
+  Xbutton: {
+    elevation: 5,
+    paddingVertical: 20,
+    paddingHorizontal: 33,
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Change this to your desired button color
+    borderRadius: 110,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20, // Add some margin to separate the button from the list
+  },
   addCategoryButton: {
     elevation: 5,
     paddingVertical: 10,
@@ -2526,6 +2612,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  XbuttonText: {
+    color: 'white',
+    fontSize: 35,
+    fontWeight: 'bold',
+  },
   successMessage: {
     position: 'absolute',
     top: 100,
@@ -2543,8 +2634,8 @@ const styles = StyleSheet.create({
   },
   menuButton: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 12,
+    right: 16,
   },
   optionsContainer: {
     backgroundColor: 'rgba(172, 188, 198, 1.7)', // Your desired background color
@@ -2626,32 +2717,38 @@ const styles = StyleSheet.create({
     fontSize: 18,fontWeight: 'bold',
     color: 'white',
   },
-  button: {
-    elevation: 5,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: 'rgba(172, 188, 198, 1.7)',
-    borderRadius: 90,
-    alignItems: 'center',
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
-    marginBottom: 20,
-    alignSelf: 'center',
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  reportButton: {
-    backgroundColor: '#6d8ea1',
-    borderRadius: 50,
-    padding: 10,
     alignItems: 'center',
-    marginTop: 0,
   },
-  reportButtonText: {
+  imagePickerModal: {
+    width: '80%',
+    backgroundColor: 'rgba(172, 188, 198, 1.1)',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  imagePickerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
     color: 'white',
+    marginBottom: 10,
+  },
+  imagePickerSubtitle: {
     fontSize: 16,
+    color: 'white',
+    marginBottom: 20,
+  },
+  imagePickerOptions: {
+    width: '100%',
+  },
+  imagePickerOptionText: {
+    fontSize: 21,
+    color: 'white',
+    padding: 8,
+    textAlign: 'center',
   },
 });
 

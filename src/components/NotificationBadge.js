@@ -12,7 +12,7 @@ const NotificationBadge = ({ onPress }) => {
         <MaterialCommunityIcons
           name="bell-outline"
           size={30}
-          color={unreadNotifications ? 'red' : 'white'} // Change bell color
+          color={unreadNotifications ? '#b2d3c2' : 'white'} // Change bell color
         />
       </TouchableOpacity>
     </View>

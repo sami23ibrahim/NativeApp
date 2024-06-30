@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Alert, ActivityIndicator, StyleSheet, Image, TouchableOpacity, KeyboardAvoidingView } from 'react-native';
+import { View, Text, TextInput, Alert, ActivityIndicator, StyleSheet, Image, TouchableOpacity, KeyboardAvoidingView, Modal } from 'react-native';
 import { getAuth, createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc } from 'firebase/firestore';
 import { FIREBASE_AUTH, storage } from '../config/firebase';
@@ -12,21 +12,30 @@ const SignUpScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [imageUri, setImageUri] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [imagePickerModalVisible, setImagePickerModalVisible] = useState(false); // State for image picker modal
   const auth = FIREBASE_AUTH;
   const firestore = getFirestore();
 
-  const selectImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permissionResult.granted === false) {
-      alert("You've refused to allow this app to access your photos!");
-      return;
+  const selectImage = async (source) => {
+    setImagePickerModalVisible(false);
+    let result;
+
+    if (source === 'camera') {
+      result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+    } else {
+      result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+
     if (!result.canceled) {
       setImageUri(result.assets[0].uri);
     }
@@ -102,11 +111,11 @@ const SignUpScreen = ({ navigation }) => {
     <View style={styles.container}>
       <KeyboardAvoidingView behavior='padding'>
         <Text style={styles.title}>Sign Up</Text>
-        <TouchableOpacity onPress={selectImage} style={styles.imagePlaceholder}>
+        <TouchableOpacity onPress={() => setImagePickerModalVisible(true)} style={styles.imagePlaceholder}>
           <Image   
-          source={imageUri ? { uri: imageUri } : require('../../assets/add.png')}
-
-          style={styles.image} />
+            source={imageUri ? { uri: imageUri } : require('../../assets/add.png')}
+            style={styles.image} 
+          />
         </TouchableOpacity>
         <TextInput
           value={username}
@@ -139,6 +148,31 @@ const SignUpScreen = ({ navigation }) => {
           </TouchableOpacity>
         )}
       </KeyboardAvoidingView>
+
+      <Modal
+        transparent={true}
+        visible={imagePickerModalVisible}
+        animationType="slide"
+        onRequestClose={() => setImagePickerModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.imagePickerModal}>
+            <Text style={styles.imagePickerTitle}>Select Image</Text>
+            <Text style={styles.imagePickerSubtitle}>Choose the source of the image</Text>
+            <View style={styles.imagePickerOptions}>
+              <TouchableOpacity onPress={() => selectImage('camera')}>
+                <Text style={styles.imagePickerOptionText}>Camera</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => selectImage('library')}>
+                <Text style={styles.imagePickerOptionText}>Library</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setImagePickerModalVisible(false)}>
+                <Text style={styles.imagePickerOptionText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -157,7 +191,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: 180,
-    height:180,
+    height: 180,
     borderRadius: 0,
   },
   title: {
@@ -195,6 +229,39 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePickerModal: {
+    width: '80%',
+    backgroundColor: 'rgba(172, 188, 198, 1.1)',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  imagePickerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 10,
+  },
+  imagePickerSubtitle: {
+    fontSize: 16,
+    color: 'white',
+    marginBottom: 20,
+  },
+  imagePickerOptions: {
+    width: '100%',
+  },
+  imagePickerOptionText: {
+    fontSize: 18,
+    color: 'white',
+    padding: 10,
+    textAlign: 'center',
   },
 });
 

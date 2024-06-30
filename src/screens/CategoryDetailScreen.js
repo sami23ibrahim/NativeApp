@@ -2253,10 +2253,6 @@
 //     height: 300,
 //   },
 // });
-
-
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, Image, TextInput, TouchableOpacity, Alert, StyleSheet, Modal, ActivityIndicator, Keyboard, Animated, FlatList } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -2267,6 +2263,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Menu, MenuOptions, MenuOption, MenuTrigger } from 'react-native-popup-menu';
 import { FIREBASE_AUTH } from '../config/firebase';
 import SearchBar from '../components/SearchBar';
+import ButtonTools from '../components/ButtonTools'; // Import the HeaderIcons component
 
 const HEADER_HEIGHT = 92;
 
@@ -2275,7 +2272,7 @@ const Spacer = ({ height }) => {
   return <View style={{ height }} />;
 };
 
-const CategoryDetailScreen = () => {
+const CategoryDetailScreen = ({ navigation }) => {
   const route = useRoute();
   const { categoryId, categoryName, teamName } = route.params;
   const [itemName, setItemName] = useState('');
@@ -2287,7 +2284,9 @@ const CategoryDetailScreen = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [loadingRole, setLoadingRole] = useState(true); // New state for loading role
   const [suggestions, setSuggestions] = useState([]);
+  const [imagePickerVisible, setImagePickerVisible] = useState(false); // Add this line
   const user = FIREBASE_AUTH.currentUser;
   const flatListRef = useRef(null);
   const searchBarRef = useRef(null);
@@ -2298,6 +2297,7 @@ const CategoryDetailScreen = () => {
   }, [categoryId, categoryName, teamName]);
 
   const fetchItemsAndRole = async () => {
+    setLoadingRole(true); // Set loading to true
     try {
       const itemsCollection = collection(db, `categories/${categoryId}/items`);
       const itemsSnapshot = await getDocs(itemsCollection);
@@ -2320,20 +2320,49 @@ const CategoryDetailScreen = () => {
       }
     } catch (error) {
       console.error('Error fetching items and role:', error);
+    } finally {
+      setLoadingRole(false); // Set loading to false
     }
   };
 
-  const selectItemImage = async () => {
+  const openLibrary = async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.granted === false) {
+      alert("You've refused to allow this app to access your photos!");
+      return;
+    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
-
     if (!result.canceled) {
       setItemImageUri(result.assets[0].uri);
+      setImagePickerVisible(false); // Close the modal after selecting an image
     }
+  };
+
+  const openCamera = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (permissionResult.granted === false) {
+      alert("You've refused to allow this app to access your camera!");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+    if (!result.canceled) {
+      setItemImageUri(result.assets[0].uri);
+      setImagePickerVisible(false); // Close the modal after taking a photo
+    }
+  };
+
+  const selectItemImage = () => {
+    setImagePickerVisible(true); // Show the modal when selecting an image
   };
 
   const uploadImage = async (uri) => {
@@ -2380,6 +2409,37 @@ const CategoryDetailScreen = () => {
     }
   };
 
+  const buttons = [
+    {
+      iconName: 'account-cog',
+      label: 'Account',
+      onPress: () => navigation.navigate('UserSettingsScreen'),
+    },
+    {
+      iconName: 'home',
+      label: 'Home',
+      onPress: () => navigation.navigate('Home'),
+    },
+    {
+      iconName: 'plus-thick',
+      label: 'Add Item',
+      onPress: () => setAddItemModalVisible(true)
+    },
+  ];
+
+  const buttons2 = [
+    {
+      iconName: 'account-cog',
+      label: 'Account',
+      onPress: () => navigation.navigate('UserSettingsScreen'),
+    },
+    {
+      iconName: 'home',
+      label: 'Home',
+      onPress: () => navigation.navigate('Home'),
+    },
+  ];
+
   const deleteItem = async (itemId, imgUrl) => {
     try {
       await deleteDoc(doc(db, `categories/${categoryId}/items`, itemId));
@@ -2392,19 +2452,22 @@ const CategoryDetailScreen = () => {
 
   const incrementQuantity = async (itemId, currentQuantity) => {
     await updateDoc(doc(db, `categories/${categoryId}/items`, itemId), { quantity: currentQuantity + 1 });
-    fetchItemsAndRole();
+    const updatedItems = items.map(item => item.id === itemId ? { ...item, quantity: currentQuantity + 1 } : item);
+    setItems(updatedItems);
   };
 
   const decrementQuantity = async (itemId, currentQuantity) => {
     if (currentQuantity > 0) {
       await updateDoc(doc(db, `categories/${categoryId}/items`, itemId), { quantity: currentQuantity - 1 });
-      fetchItemsAndRole();
+      const updatedItems = items.map(item => item.id === itemId ? { ...item, quantity: currentQuantity - 1 } : item);
+      setItems(updatedItems);
     }
   };
 
   const updateQuantity = async (itemId, newQuantity) => {
     await updateDoc(doc(db, `categories/${categoryId}/items`, itemId), { quantity: newQuantity });
-    fetchItemsAndRole();
+    const updatedItems = items.map(item => item.id === itemId ? { ...item, quantity: newQuantity } : item);
+    setItems(updatedItems);
   };
 
   const editItemDetails = (item) => {
@@ -2461,195 +2524,228 @@ const CategoryDetailScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.header, { transform: [{ translateY: headerTranslateY }] }]}>
-        <Text style={styles.categoryName}>{categoryName}</Text>
-        {items.length > 0 && <SearchBar ref={searchBarRef} items={items} onSelect={handleItemSelect} />}
-      </Animated.View>
-      <Spacer height={80} />
-      {items.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.noCategories}>
-            This category has no items yet. {' '}
-            {isAdmin ? (
-              <Text style={styles.noCategories}>Add some items to start organizing your inventory!</Text>
-            ) : (
-              <Text style={styles.noCategories}>New items will appear here when added!</Text>
-            )}
-          </Text>
-          <Image source={require('../../assets/box2.png')} style={styles.emptyImage} />
+      {loadingRole ? ( // Show a loading indicator while the role is being fetched
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="white" />
         </View>
-      ) : null}
-      <AnimatedFlatList
-        ref={flatListRef}
-        data={items}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <View key={item.id} style={styles.itemContainer}>
-            <Image source={{ uri: item.img }} style={[styles.itemImage, { borderRadius: 10 }]} />
-            <View style={styles.itemDetails}>
-              <Text style={styles.itemName}>{item.name}</Text>
-              <View style={styles.quantityContainer}>
-                <TouchableOpacity style={styles.circleButton} onPress={() => decrementQuantity(item.id, item.quantity)}>
-                  <Text style={styles.quantityButton}>-</Text>
-                </TouchableOpacity>
-                <TextInput
-                  style={styles.quantityInput}
-                  value={String(item.quantity)}
-                  keyboardType="numeric"
-                  onChangeText={(text) => updateQuantity(item.id, parseInt(text) || 0)}
-                />
-                <TouchableOpacity style={styles.circleButtonPlus} onPress={() => incrementQuantity(item.id, item.quantity)}>
-                  <Text style={styles.quantityButtonPlus}>+</Text>
-                </TouchableOpacity>
-              </View>
+      ) : (
+        <>
+          <Animated.View style={[styles.header, { transform: [{ translateY: headerTranslateY }] }]}>
+            <Text style={styles.categoryName}>{categoryName}</Text>
+            {items.length > 0 && <SearchBar ref={searchBarRef} items={items} onSelect={handleItemSelect} />}
+          </Animated.View>
+          <Spacer height={80} />
+          {items.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.noCategories}>
+                This Shelf has no items yet.{' '}
+                {isAdmin ? (
+                  <Text style={styles.noCategories}>Add some items to start organizing your inventory!</Text>
+                ) : (
+                  <Text style={styles.noCategories}>New items will appear here when added!</Text>
+                )}
+              </Text>
+              <Image source={require('../../assets/box2.png')} style={styles.emptyImage} />
             </View>
-            {isAdmin && (
-              <Menu>
-                <MenuTrigger>
-                  <Text style={styles.menuButton}>⋮</Text>
-                </MenuTrigger>
-                <MenuOptions customStyles={{ optionsContainer: styles.optionsContainer }}>
-                  <MenuOption onSelect={() => editItemDetails(item)} text="Edit" customStyles={{ optionText: styles.optionText }} />
-                  <MenuOption onSelect={() => deleteItem(item.id, item.img)} text="Delete" customStyles={{ optionText: styles.optionText }} />
-                </MenuOptions>
-              </Menu>
-            )}
-          </View>
-        )}
-        ListFooterComponent={
-          <>
-            <Modal
-              animationType="slide"
-              transparent={true}
-              visible={modalVisible}
-              onRequestClose={() => {
-                setModalVisible(!modalVisible);
-                setEditItem(null);
-                setItemName('');
-                setItemImageUri('');
-              }}
-            >
-              <View style={styles.modalContainer}>
-                <View style={styles.modalView}>
-                  <TextInput
-                    placeholder="Item Name"
-                    value={itemName}
-                    onChangeText={setItemName}
-                    style={styles.input}
-                    editable={!loading}
-                    placeholderTextColor="white"
-                  />
-                  <TouchableOpacity onPress={selectItemImage} disabled={loading}>
-                    <Image
-                      source={{ uri: itemImageUri || 'https://via.placeholder.com/150' }}
-                      style={[styles.image, { borderRadius: 20 }]}
+          ) : null}
+          <AnimatedFlatList
+            ref={flatListRef}
+            data={items}
+            keyExtractor={item => item.id}
+            renderItem={({ item }) => (
+              <View key={item.id} style={styles.itemContainer}>
+                <Image source={{ uri: item.img }} style={[styles.itemImage, { borderRadius: 10 }]} />
+                <View style={styles.itemDetails}>
+                  <Text style={styles.itemName}>{item.name}</Text>
+                  <View style={styles.quantityContainer}>
+                    <TouchableOpacity style={styles.circleButton} onPress={() => decrementQuantity(item.id, item.quantity)}>
+                      <Text style={styles.quantityButton}>-</Text>
+                    </TouchableOpacity>
+                    <TextInput
+                      style={styles.quantityInput}
+                      value={String(item.quantity)}
+                      keyboardType="numeric"
+                      onChangeText={(text) => updateQuantity(item.id, parseInt(text) || 0)}
                     />
-                  </TouchableOpacity>
-                  <View style={styles.buttonContainer}>
-                    {loading ? (
-                      <ActivityIndicator size="large" color="#0000ff" />
-                    ) : (
-                      <>
-                        <TouchableOpacity style={[styles.button, styles.updateButton]} onPress={updateItem}>
-                          <Text style={styles.buttonText}>Update</Text>
-                        </TouchableOpacity>
-                        <View style={styles.buttonSpacing} />
-                        <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => {
-                          setModalVisible(false);
-                          setEditItem(null);
-                          setItemName('');
-                          setItemImageUri('');
-                        }} disabled={loading}>
-                          <Text style={styles.buttonText}>Cancel</Text>
-                        </TouchableOpacity>
-                      </>
-                    )}
+                    <TouchableOpacity style={styles.circleButtonPlus} onPress={() => incrementQuantity(item.id, item.quantity)}>
+                      <Text style={styles.quantityButtonPlus}>+</Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
-              </View>
-            </Modal>
-            <Modal
-              animationType="slide"
-              transparent={true}
-              visible={addItemModalVisible}
-              onRequestClose={() => {
-                console.log("Closing add item modal");
-                setAddItemModalVisible(!addItemModalVisible);
-                setItemName('');
-                setItemImageUri('');
-              }}
-            >
-              <View style={styles.modalContainer}>
-                <View style={styles.modalView}>
-                  <TextInput
-                    placeholder="Item Name"
-                    value={itemName}
-                    onChangeText={setItemName}
-                    style={styles.input}
-                    editable={!loading}
-                    placeholderTextColor="white"
-                  />
-                  <TouchableOpacity onPress={selectItemImage} disabled={loading}>
-                    <Image
-                      source={itemImageUri ? { uri: itemImageUri } : require('../../assets/addImg.png')}
-                      style={[styles.image, { borderRadius: 20 }]}
-                    />
-                  </TouchableOpacity>
-                  <View style={styles.buttonContainer}>
-                    {loading ? (
-                      <ActivityIndicator size="large" color="#0000ff" />
-                    ) : (
-                      <>
-                        <TouchableOpacity style={[styles.button, styles.addButton]} onPress={addItem}>
-                          <Text style={styles.buttonText}>Add Item</Text>
-                        </TouchableOpacity>
-                        <View style={styles.buttonSpacing} />
-                        <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => {
-                          setAddItemModalVisible(false);
-                          setItemName('');
-                          setItemImageUri('');
-                        }}>
-                          <Text style={styles.buttonText}>Cancel</Text>
-                        </TouchableOpacity>
-                      </>
-                    )}
-                  </View>
-                </View>
-              </View>
-            </Modal>
-            {success && (
-              <View style={styles.successMessage}>
-                <Text style={styles.successText}>Item added successfully!</Text>
+                {isAdmin && (
+                  <Menu>
+                    <MenuTrigger>
+                      <Text style={styles.menuButton}>⋮</Text>
+                    </MenuTrigger>
+                    <MenuOptions customStyles={{ optionsContainer: styles.optionsContainer }}>
+                      <MenuOption onSelect={() => editItemDetails(item)} text="Edit" customStyles={{ optionText: styles.optionText }} />
+                      <MenuOption onSelect={() => deleteItem(item.id, item.img)} text="Delete" customStyles={{ optionText: styles.optionText }} />
+                    </MenuOptions>
+                  </Menu>
+                )}
               </View>
             )}
-          </>
-        }
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true, listener: handleScroll }
-        )}
-        contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}
-      />
-      {isAdmin && (
-        <TouchableOpacity style={styles.floatingAddButton} onPress={() => {
-          setAddItemModalVisible(true);
-        }}>
-          <Text style={styles.floatingAddButtonText}>Add Item</Text>
-        </TouchableOpacity>
+            ListFooterComponent={
+              <>
+                <Modal
+                  animationType="slide"
+                  transparent={true}
+                  visible={modalVisible}
+                  onRequestClose={() => {
+                    setModalVisible(!modalVisible);
+                    setEditItem(null);
+                    setItemName('');
+                    setItemImageUri('');
+                  }}
+                >
+                  <View style={styles.modalContainer}>
+                    <View style={styles.modalView}>
+                      <TextInput
+                        placeholder="Item Name"
+                        value={itemName}
+                        onChangeText={setItemName}
+                        style={styles.input}
+                        editable={!loading}
+                        placeholderTextColor="white"
+                      />
+                      <TouchableOpacity onPress={selectItemImage} disabled={loading}>
+                        <Image
+                          source={{ uri: itemImageUri || 'https://via.placeholder.com/150' }}
+                          style={[styles.image, { borderRadius: 20 }]}
+                        />
+                      </TouchableOpacity>
+                      <View style={styles.buttonContainer}>
+                        {loading ? (
+                          <ActivityIndicator size="large" color="white" style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} />
+                        ) : (
+                          <>
+                            <TouchableOpacity style={[styles.button, styles.updateButton]} onPress={updateItem}>
+                              <Text style={styles.buttonText}>Update</Text>
+                            </TouchableOpacity>
+                            <View style={styles.buttonSpacing} />
+                            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => {
+                              setModalVisible(false);
+                              setEditItem(null);
+                              setItemName('');
+                              setItemImageUri('');
+                            }} disabled={loading}>
+                              <Text style={styles.buttonText}>Cancel</Text>
+                            </TouchableOpacity>
+                          </>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                </Modal>
+                <Modal
+                  animationType="slide"
+                  transparent={true}
+                  visible={addItemModalVisible}
+                  onRequestClose={() => {
+                    console.log("Closing add item modal");
+                    setAddItemModalVisible(!addItemModalVisible);
+                    setItemName('');
+                    setItemImageUri('');
+                  }}
+                >
+                  <View style={styles.modalContainer}>
+                    <View style={styles.modalView}>
+                      <TextInput
+                        placeholder="Item Name"
+                        value={itemName}
+                        onChangeText={setItemName}
+                        style={styles.input}
+                        editable={!loading}
+                        placeholderTextColor="white"
+                      />
+                      <TouchableOpacity onPress={selectItemImage} disabled={loading}>
+                        <Image
+                          source={itemImageUri ? { uri: itemImageUri } : require('../../assets/addImg.png')}
+                          style={[styles.image, { borderRadius: 20 }]}
+                        />
+                      </TouchableOpacity>
+                      <View style={styles.buttonContainer}>
+                        {loading ? (
+                          <ActivityIndicator size="large" color="white" style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} />
+                        ) : (
+                          <>
+                            <TouchableOpacity style={[styles.button, styles.addButton]} onPress={addItem}>
+                              <Text style={styles.buttonText}>Add Item</Text>
+                            </TouchableOpacity>
+                            <View style={styles.buttonSpacing} />
+                            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => {
+                              setAddItemModalVisible(false);
+                              setItemName('');
+                              setItemImageUri('');
+                            }}>
+                              <Text style={styles.buttonText}>Cancel</Text>
+                            </TouchableOpacity>
+                          </>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                </Modal>
+                <Modal
+                  animationType="slide"
+                  transparent={true}
+                  visible={imagePickerVisible}
+                  onRequestClose={() => setImagePickerVisible(false)}
+                >
+                  <View style={styles.imagePickerContainer}>
+                    <View style={styles.imagePickerModal}>
+                      <Text style={styles.imagePickerTitle}>Select Image</Text>
+                      <Text style={styles.imagePickerSubtitle}>Choose the source of the image</Text>
+                      <View style={styles.imagePickerOptions}>
+                        <TouchableOpacity onPress={openCamera}>
+                          <Text style={styles.imagePickerOptionText}>Camera</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={openLibrary}>
+                          <Text style={styles.imagePickerOptionText}>Library</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setImagePickerVisible(false)}>
+                          <Text style={styles.imagePickerOptionText}>Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                </Modal>
+                {success && (
+                  <View style={styles.successMessage}>
+                    <Text style={styles.successText}>Item added successfully!</Text>
+                  </View>
+                )}
+              </>
+            }
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+              { useNativeDriver: true, listener: handleScroll }
+            )}
+            contentContainerStyle={{ paddingTop: HEADER_HEIGHT }}
+          />
+          {isAdmin && (
+            <ButtonTools buttons={buttons} />
+          )}
+          {!isAdmin && (
+            <ButtonTools buttons={buttons2} />
+          )}
+        </>
       )}
     </View>
   );
 };
-
-
-
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#9cacbc',
   },
-
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: '#9cacbc',
+    alignItems: 'center',
+  },
   optionsContainer: {
     backgroundColor: 'rgba(172, 188, 198, 1.7)', // Your desired background color
     padding: 5,
@@ -2660,11 +2756,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   noCategories: {
-    fontSize: 28,marginTop: 120,
+    fontSize: 24,
+    marginTop: 120,
     fontWeight: 'bold',
     color: 'white',
     textAlign: 'center',
-    marginVertical: 55,
+    marginVertical: 25,
   },
   emptyContainer: {
     flex: 1,
@@ -2676,7 +2773,8 @@ const styles = StyleSheet.create({
   emptyImage: {
     width: 330,
     height: 200,
-    marginTop: 20,marginButtom: 90,
+    marginTop: 20,
+    marginBottom: 90,
   },
   header: {
     position: 'absolute',
@@ -2695,7 +2793,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
     height: 53,
     fontWeight: 'bold',
-    color: 'white',
+    color: '#f0f0f0',
   },
   input: {
     height: 40,
@@ -2704,13 +2802,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 12,
     paddingHorizontal: 8,
-    width: 200,color: 'white',
+    width: 200,
+    color: 'white',
   },
   image: {
     width: 123,
     height: 115,
     marginBottom: 20,
-    borderRadius:10,
+    borderRadius: 10,
   },
   itemContainer: {
     flexDirection: 'row',
@@ -2733,14 +2832,14 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    color: 'white'
+    color: '#f0f0f0',
   },
   itemName: {
     fontSize: 20,
     fontWeight: 'bold',
     padding: 11,
     textAlign: 'center',
-    color: 'white'
+    color: '#f0f0f0',
   },
   quantityContainer: {
     flexDirection: 'row',
@@ -2750,17 +2849,21 @@ const styles = StyleSheet.create({
   },
   circleButtonPlus: {
     backgroundColor: '#9cacbc',
-    borderRadius:15,
+    borderRadius: 15,
     padding: 10,
     marginHorizontal: 5,
-    elevation: 4,height:47,width:53,
+    elevation: 4,
+    height: 47,
+    width: 53,
   },
   circleButton: {
     backgroundColor: '#9cacbc',
     borderRadius: 15,
     padding: 10,
     marginHorizontal: 5,
-    elevation: 4,height:49,width:51,
+    elevation: 4,
+    height: 49,
+    width: 51,
   },
   quantityButton: {
     fontSize: 25,
@@ -2782,7 +2885,7 @@ const styles = StyleSheet.create({
     width: 40,
     borderBottomWidth: 0,
     marginHorizontal: 14,
-    color: 'white'
+    color: '#f0f0f0',
   },
   menuButton: {
     fontSize: 30,
@@ -2826,7 +2929,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   addButton: {
-    width:'85%',
+    width: '85%',
     elevation: 5,
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -2837,7 +2940,7 @@ const styles = StyleSheet.create({
     marginBottom: 20, // Add some margin to separate the button from the list
   },
   updateButton: {
-    width:'85%',
+    width: '85%',
     elevation: 5,
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -2848,7 +2951,7 @@ const styles = StyleSheet.create({
     marginBottom: 20, // Add some margin to separate the button from the list
   },
   cancelButton: {
-    width:'85%',
+    width: '85%',
     elevation: 5,
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -2878,8 +2981,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
   },
-
- 
   floatingAddButton: {
     position: 'absolute',
     bottom: 20,
@@ -2893,6 +2994,39 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  imagePickerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  imagePickerModal: {
+    width: '80%',
+    backgroundColor: 'rgba(172, 188, 198, 0.8)',
+    borderRadius: 20,
+    padding: 20,
+    alignItems: 'center',
+  },
+  imagePickerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 10,
+  },
+  imagePickerSubtitle: {
+    fontSize: 16,
+    color: 'white',
+    marginBottom: 20,
+  },
+  imagePickerOptions: {
+    width: '100%',
+  },
+  imagePickerOptionText: {
+    fontSize: 18,
+    color: 'white',
+    textAlign: 'center',
+    paddingVertical: 10,
   },
 });
 
