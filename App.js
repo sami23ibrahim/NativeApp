@@ -184,8 +184,6 @@
 // }
 
 
-
-
 // App.js
 import { AppRegistry } from 'react-native';
 import 'react-native-gesture-handler';
@@ -210,6 +208,8 @@ import UpdateEmailScreen from './src/screens/UpdateEmailScreen'; // Correct impo
 import ChangePasswordScreen from './src/screens/ChangePasswordScreen'; // Correct import for default export
 import DeleteAccountScreen from './src/screens/DeleteAccountScreen'; // Correct import for default export
 import NetworkCheck from './src/components/NetworkCheck'; // Import the NetworkCheck component
+import { SafeAreaView } from 'react-native-safe-area-context'; // Import SafeAreaView
+import { StatusBar } from 'expo-status-bar'; // Import StatusBar
 
 const Stack = createStackNavigator();
 const auth = getAuth();
@@ -230,40 +230,63 @@ export default function App() {
     <NotificationProvider>
       <MenuProvider>
         <NetworkCheck>
-          <NavigationContainer>
-            <Stack.Navigator
-              initialRouteName="Login"
-              screenOptions={({ navigation }) => ({
-                headerStyle: { backgroundColor: '#9cacbc' },
-                headerTintColor: '#fff',
-                headerTitleStyle: { fontWeight: 'bold' },
-                headerShadowVisible: false,
-                headerTitleAlign: 'center', // Center the title
-                headerRight: () => 
-                  (navigation.getState().routes[navigation.getState().index].name !== 'Login' &&
-                  navigation.getState().routes[navigation.getState().index].name !== 'Signup') ? (
-                    <HeaderIcons navigation={navigation} handleSignOut={() => handleSignOut(navigation)} />
-                  ) : null,
-                headerTitle: 'SAMIs App',
-              })}
-            >
-              <Stack.Screen name="Login" component={LoginScreen} />
-              <Stack.Screen name="Signup" component={SignupScreen} />
-              <Stack.Screen name="CategoryDetailScreen" component={CategoryDetailScreen} />
-              <Stack.Screen name="CategoryListScreen" component={CategoryListScreen} />
-              <Stack.Screen name="Home" component={HomeScreen} options={{headerLeft: null // Remove back arrow for Home screen
-    }} />
-              <Stack.Screen name="ManageTeam" component={ManageTeamScreen} />
-              <Stack.Screen name="UserSettingsScreen">
-                {props => <UserSettingsScreen {...props} handleSignOut={() => handleSignOut(props.navigation)} />}
-              </Stack.Screen>
-              <Stack.Screen name="PasswordReset" component={PasswordResetScreen} />
-              <Stack.Screen name="NotificationTest" component={NotificationTestScreen} />
-              <Stack.Screen name="UpdateEmail" component={UpdateEmailScreen} />
-              <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-              <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
-            </Stack.Navigator>
-          </NavigationContainer>
+          <SafeAreaView style={{ flex: 1 }}>
+            {/* Set the StatusBar background color and style */}
+            <StatusBar backgroundColor="#9cacbc" style="dark" />
+            <NavigationContainer>
+              <Stack.Navigator
+                initialRouteName="Login"
+                screenOptions={({ navigation }) => ({
+                  headerStyle: { backgroundColor: '#9cacbc' },
+                  headerTintColor: '#fff',
+                  headerTitleStyle: { fontWeight: 'bold' },
+                  headerShadowVisible: false,
+                  headerTitleAlign: 'center', // Center the title
+                  headerRight: () =>
+                    (navigation.getState().routes[navigation.getState().index].name !== 'Login' &&
+                    navigation.getState().routes[navigation.getState().index].name !== 'Signup') ? (
+                      <HeaderIcons navigation={navigation} handleSignOut={() => handleSignOut(navigation)} />
+                    ) : null,
+                  headerTitle: 'SAMIs App',
+                })}
+              >
+                <Stack.Screen name="Login" component={LoginScreen} />
+                <Stack.Screen name="Signup" component={SignupScreen}
+                options={{
+                  headerTitle: '' // Set the header title to "MY TEAMS" for the Home screen
+
+}} />
+                <Stack.Screen name="CategoryDetailScreen" component={CategoryDetailScreen}options={{
+                                      headerTitle: 'SHELF ITEMS' // Set the header title to "MY TEAMS" for the Home screen
+
+                 }} />
+                <Stack.Screen name="CategoryListScreen" component={CategoryListScreen}  options={{
+                                      headerTitle: 'TEAM SHELVES' // Set the header title to "MY TEAMS" for the Home screen
+
+                 }} />
+                <Stack.Screen name="Home" component={HomeScreen} options={{headerLeft: null,
+                                      headerTitle: 'MY TEAMS' // Set the header title to "MY TEAMS" for the Home screen
+
+                 }} />
+                <Stack.Screen name="ManageTeam" component={ManageTeamScreen} />
+                <Stack.Screen name="UserSettingsScreen">
+                  {props => <UserSettingsScreen {...props} handleSignOut={() => handleSignOut(props.navigation)} />}
+                </Stack.Screen>
+                <Stack.Screen name="PasswordReset" component={PasswordResetScreen} options={{
+                  headerRight: null ,headerTitle: '', // Remove the notifications icon for ChangePassword screen
+                }} />
+                <Stack.Screen name="NotificationTest" component={NotificationTestScreen} options={{
+                  headerRight: null ,headerTitle: 'NOTIFICATIONS', // Remove the notifications icon for ChangePassword screen
+                }} />
+                <Stack.Screen name="UpdateEmail" component={UpdateEmailScreen} />
+                <Stack.Screen name="ChangePassword" component={ChangePasswordScreen}
+                options={{
+                  headerRight: null ,headerTitle: '', // Remove the notifications icon for ChangePassword screen
+                }} />
+                <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
+              </Stack.Navigator>
+            </NavigationContainer>
+          </SafeAreaView>
         </NetworkCheck>
       </MenuProvider>
     </NotificationProvider>

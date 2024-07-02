@@ -405,7 +405,7 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>MY TEAMS</Text>
+ 
       <View style={styles.listContainer}>
         {loadingTeams ? (
           <View style={styles.loadingContainer}>
@@ -786,3 +786,12 @@ const styles = StyleSheet.create({
 });
 
 export default HomeScreen;
+
+
+
+
+
+
+
+
+

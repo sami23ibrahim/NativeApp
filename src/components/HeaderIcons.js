@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     backgroundColor: 'rgba(172, 188, 198, 0.33)',
     borderRadius: 90, // Adjust this to make the background more or less rounded
-    padding: 10, // Adjust the padding to control the size of the background
+    padding: 4.3, // Adjust the padding to control the size of the background
     justifyContent: 'center',
     alignItems: 'center',marginHorizontal:30, // Adjust this for equal spacing between icons
   },

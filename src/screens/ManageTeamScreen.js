@@ -328,7 +328,6 @@
 // import { FIREBASE_AUTH } from '../config/firebase';
 // import { MaterialCommunityIcons } from '@expo/vector-icons';
 // import { Menu, MenuOptions, MenuOption, MenuTrigger } from 'react-native-popup-menu';
-// import * as Clipboard from 'expo-clipboard';
 
 // const ManageTeamScreen = ({ route }) => {
 //   const { teamId, teamName } = route.params;

@@ -114,7 +114,6 @@ const NotificationTestScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>NOTIFICATIONS</Text>
       <FlatList
         data={notifications.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds)}
         keyExtractor={(item, index) => index.toString()}
@@ -127,7 +126,7 @@ const NotificationTestScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'center',backgroundColor: 'rgba(172, 188, 198, 0.7)',
     alignItems: 'center',
   },
   notificationContainer: {

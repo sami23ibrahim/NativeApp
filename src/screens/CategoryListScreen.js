@@ -2244,12 +2244,16 @@ const CategoryListScreen = ({ navigation }) => {
   const renderCategoryItem = ({ item }) => {
     const screenWidth = Dimensions.get('window').width;
     const itemWidth = (screenWidth - 60) / numColumns;
-
+  
     return (
       <View style={[styles.categoryContainer, { width: itemWidth, height: itemWidth }]}>
-        <TouchableOpacity onPress={() => navigation.navigate('CategoryDetailScreen', 
-          { categoryId: item.id, categoryName: item.name, teamName })} style={styles.categoryContent}>
-          <Image source={{ uri: item.img }} style={styles.categoryImage} />
+        <TouchableOpacity 
+          onPress={() => navigation.navigate('CategoryDetailScreen', { categoryId: item.id, categoryName: item.name, teamName })} 
+          style={styles.categoryContent}
+        >
+          <View style={styles.imageShadowContainer}>
+            <Image source={{ uri: item.img }} style={styles.categoryImage} />
+          </View>
           <Text style={styles.categoryName}>{item.name}</Text>
         </TouchableOpacity>
         {userRole === 'admin' && (
@@ -2273,6 +2277,7 @@ const CategoryListScreen = ({ navigation }) => {
       </View>
     );
   };
+  
 
   const headerTranslateY = scrollY.interpolate({
     inputRange: [0, HEADER_HEIGHT],
@@ -2296,7 +2301,7 @@ const CategoryListScreen = ({ navigation }) => {
           {categories.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.noCategories}>
-                This Team Has No Shelves Yet. {''}
+              This team's inventory has no Shelves yet. {''}
                 {userRole !== 'admin' && (
                   <Text style={styles.noCategories}>New Shelves Will Appear Here When Added!</Text>
                 )}
@@ -2511,17 +2516,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  categoryImage: {
+  imageShadowContainer: {
     width: '90%',
     height: '85%',
-    resizeMode: 'cover',
     borderRadius: 20,
-    shadowOffset: { width: 10, height: 2 },
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowColor: 'black',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.55,
     shadowRadius: 4,
-    elevation: 5,
+    elevation: 8, // For Android shadow
+    overflow: 'hidden', // This ensures the rounded corners are not clipped by the shadow
+  },
+  
+  categoryImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
   categoryName: {
     textAlign: 'center',
