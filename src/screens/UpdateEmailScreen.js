@@ -68,15 +68,15 @@ const UpdateEmail = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={styles.title}>Update Email</Text>
       <TextInput
-        placeholder="New Email"
-        placeholderTextColor="white"
+        placeholder=" New Email"
+        placeholderTextColor="gray"
         value={newEmail}
         onChangeText={setNewEmail}
         style={[styles.input, (emailMismatch || emailSameAsCurrent) && { borderColor: 'red' }]}
       />
       <TextInput
-        placeholder="Confirm New Email"
-        placeholderTextColor="white"
+        placeholder=" Confirm New Email"
+        placeholderTextColor="gray"
         value={confirmNewEmail}
         onChangeText={setConfirmNewEmail}
         style={[styles.input, (emailMismatch || emailSameAsCurrent) && { borderColor: 'red' }]}
@@ -98,8 +98,8 @@ const UpdateEmail = ({ navigation }) => {
         <View style={styles.modalView}>
           <Text style={styles.modalText}>Please reauthenticate to proceed</Text>
           <TextInput
-            placeholder="Current Password"
-            placeholderTextColor="white"
+            placeholder=" Current Password"
+            placeholderTextColor="gray"
             value={currentPassword}
             onChangeText={setCurrentPassword}
             secureTextEntry
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: '#9cacbc',
+    backgroundColor: 'black',
   },
   title: {
     fontSize: 28,
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   input: {
     height: 40,
     borderColor: '#ccc',
-    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    backgroundColor: 'rgba(172, 188, 198, 0.13)',
     borderWidth: 1.3,
     borderRadius: 20,
     marginBottom: 15,
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',  backgroundColor: 'rgba(172, 188, 198, 0.13)',
     borderRadius: 90,
     alignItems: 'center',
     justifyContent: 'center',

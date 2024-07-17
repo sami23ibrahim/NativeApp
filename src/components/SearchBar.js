@@ -44,7 +44,7 @@ const SearchBar = forwardRef(({ items, onSelect }, ref) => {
     <View style={styles.searchContainer}>
       <TextInput 
         style={styles.searchInput}
-        placeholder="Search items..."
+        placeholder="  Search items..."
         placeholderTextColor='white'
         value={query}
         onChangeText={setQuery}
@@ -71,15 +71,15 @@ const SearchBar = forwardRef(({ items, onSelect }, ref) => {
 
 const styles = StyleSheet.create({
   searchContainer: {
-    padding: 14,
+    padding: 11,
     width: '95%', 
     borderRadius: 0,
     alignSelf: 'center',
-    backgroundColor: '#9cacbc',
+    backgroundColor: '#9cacbc', backgroundColor: 'black',
  
   },
   searchInput: {
-    height: 50,
+    height: 45,
     borderRadius: 40,
     borderColor: '#ccc',
     borderWidth: 2.4,
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
   noResults: {
     padding: 10,
     color: '#ccc', 
-    backgroundColor: '#9cacbc',
+    backgroundColor: '#9cacbc',backgroundColor: 'black',
     width: '95%', 
     borderRadius: 40,
     alignSelf: 'center',
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   suggestionsContainer: {
-    backgroundColor: '#9cacbc',
+    backgroundColor: '#9cacbc',backgroundColor: 'black',
     borderColor: '#ccc',
     borderWidth: 2,
     marginTop: 5,

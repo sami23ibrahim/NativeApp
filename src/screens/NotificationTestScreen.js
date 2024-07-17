@@ -71,31 +71,37 @@
 
 // src/screens/NotificationTestScreen.js
 
-import React, { useContext, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
+import React, { useContext, useEffect, useCallback,useMemo } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, SafeAreaView, Dimensions } from 'react-native';
 import { NotificationContext } from '../components/NotificationProvider';
 import { useNavigation } from '@react-navigation/native';
-import { getFirestore, doc, getDoc } from 'firebase/firestore'; // Import Firebase Firestore
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 const NotificationTestScreen = () => {
   const { notifications, clearNotifications } = useContext(NotificationContext);
   const navigation = useNavigation();
-  const db = getFirestore(); // Initialize Firestore
+  const db = getFirestore();
+  const { width } = Dimensions.get('window');
 
   useEffect(() => {
     clearNotifications();
   }, [clearNotifications]);
 
-  const handleNotificationPress = async (notification) => {
-    const teamDocRef = doc(db, 'teams', notification.teamId);
-    const teamDocSnap = await getDoc(teamDocRef);
+  const handleNotificationPress = useCallback(async (notification) => {
+    try {
+      const teamDocRef = doc(db, 'teams', notification.teamId);
+      const teamDocSnap = await getDoc(teamDocRef);
 
-    if (teamDocSnap.exists()) {
-      navigation.navigate('ManageTeam', { teamId: notification.teamId });
-    } else {
-      Alert.alert('Team not found', 'The team has been deleted or does not exist.');
+      if (teamDocSnap.exists()) {
+        navigation.navigate('ManageTeam', { teamId: notification.teamId });
+      } else {
+        Alert.alert('Team not found', 'The team has been deleted or does not exist.');
+      }
+    } catch (error) {
+      console.error('Error fetching team document:', error);
+      Alert.alert('Error', 'Failed to fetch team details.');
     }
-  };
+  }, [db, navigation]);
 
   const renderItem = ({ item }) => {
     const timestampString = new Date(item.timestamp.seconds * 1000).toLocaleString();
@@ -112,41 +118,48 @@ const NotificationTestScreen = () => {
     );
   };
 
+  const sortedNotifications = useMemo(() => 
+    notifications.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds), 
+    [notifications]
+  );
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <FlatList
-        data={notifications.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds)}
+        data={sortedNotifications}
         keyExtractor={(item, index) => index.toString()}
         renderItem={renderItem}
       />
-    </View>
+    </SafeAreaView>
   );
 };
+
+const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',backgroundColor: 'rgba(172, 188, 198, 0.7)',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(172, 188, 198, 0.7)', backgroundColor: 'black',
     alignItems: 'center',
+    padding: 10,
   },
   notificationContainer: {
     margin: 10,
     padding: 10,
-    backgroundColor: '#eee',
+    backgroundColor: 'gray',backgroundColor: 'rgba(172, 188, 198, 0.19)',
     borderRadius: 5,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginVertical: 10,
-    color: 'black',
+    width: width * 0.9,
   },
   notificationText: {
     marginBottom: 5,
+    fontSize: 16,
+    color: 'white',
   },
   notificationTimestamp: {
-    color: '#888',
+    color: 'white',
+    fontSize: 14,
   },
 });
 
-export default NotificationTestScreen;
+export default React.memo(NotificationTestScreen);

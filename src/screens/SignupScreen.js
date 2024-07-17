@@ -110,7 +110,6 @@ const SignUpScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView behavior='padding'>
-        <Text style={styles.title}>Sign Up</Text>
         <TouchableOpacity onPress={() => setImagePickerModalVisible(true)} style={styles.imagePlaceholder}>
           <Image   
             source={imageUri ? { uri: imageUri } : require('../../assets/add.png')}
@@ -120,28 +119,28 @@ const SignUpScreen = ({ navigation }) => {
         <TextInput
           value={username}
           style={styles.input}
-          placeholder="Username"
+          placeholder=" Username"
           onChangeText={setUsername}
-          placeholderTextColor="white"
+          placeholderTextColor="gray"
         />
         <TextInput
           value={email}
           style={styles.input}
-          placeholder="Email"
+          placeholder=" Email"
           autoCapitalize="none"
           onChangeText={setEmail}
-          placeholderTextColor="white"
+          placeholderTextColor="gray"
         />
         <TextInput
           secureTextEntry={true}
           value={password}
           style={styles.input}
-          placeholder="Password"
+          placeholder=" Password"
           onChangeText={setPassword}
-          placeholderTextColor="white"
+          placeholderTextColor="gray"
         />
         {loading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
+          <ActivityIndicator size="large" color="white" />
         ) : (
           <TouchableOpacity style={styles.button} onPress={signUp}>
             <Text style={styles.buttonText}>Sign Up</Text>
@@ -182,7 +181,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: '#9cacbc',
+    backgroundColor: 'black',
   },
   imagePlaceholder: {
     alignItems: 'center',
@@ -209,7 +208,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     paddingHorizontal: 8,
     width: '88%',
-    backgroundColor: '#9cacbc',
+    backgroundColor: 'rgba(172, 188, 198, 0.13)',
     color: 'white',
     alignSelf: 'center',
   },
@@ -218,7 +217,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', backgroundColor: 'rgba(172, 188, 198, 0.43)',
     borderRadius: 90,
     alignItems: 'center',
     justifyContent: 'center',
@@ -238,10 +237,15 @@ const styles = StyleSheet.create({
   },
   imagePickerModal: {
     width: '80%',
-    backgroundColor: 'rgba(172, 188, 198, 1.1)',
-    borderRadius: 10,
-    padding: 20,
+    backgroundColor: 'black',
+    borderRadius: 20,
+    padding: 35,
     alignItems: 'center',
+    shadowColor: 'white',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   imagePickerTitle: {
     fontSize: 20,

@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#9cacbc',
+    backgroundColor: '#9cacbc',backgroundColor: 'black',
   },
   title: {
     fontSize: 24,
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   noItemsContainer: {
     flex: 1,
     justifyContent: 'top',
-    alignItems: 'center',
+    alignItems: 'center',backgroundColor: 'black',
   },
   noItemsText: {
     color: 'white',
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   itemContainer: {
     padding: 10,
     marginVertical: 4,
-    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    backgroundColor: 'rgba(172, 188, 198,0.13)',
     borderRadius: 10,
   },
   itemText: {

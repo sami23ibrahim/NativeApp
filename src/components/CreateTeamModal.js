@@ -440,22 +440,41 @@
 //     marginBottom: 20,
 //   },
 // });
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert, Image, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
+
+
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  Alert,
+  Image,
+  TouchableOpacity,
+  ActivityIndicator,
+  Modal,
+  SafeAreaView,
+  Dimensions,
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard
+} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { getFirestore, collection, addDoc, doc, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
 import { FIREBASE_AUTH, storage } from '../config/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
-const CreateTeamModal = ({ setVisible, refreshTeams }) => {
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+const CreateTeamModal = ({ setVisible, refreshTeams, TextInputRef }) => {
   const [teamName, setTeamName] = useState('');
-  const [imageUri, setImageUri] = useState(null); // Initialize as null
+  const [imageUri, setImageUri] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [imagePickerModalVisible, setImagePickerModalVisible] = useState(false); // State for image picker modal
+  const [imagePickerModalVisible, setImagePickerModalVisible] = useState(false);
   const firestore = getFirestore();
   const user = FIREBASE_AUTH.currentUser;
 
-  const selectImage = async (source) => {
+  const selectImage = useCallback(async (source) => {
     setImagePickerModalVisible(false);
     let result;
 
@@ -476,11 +495,11 @@ const CreateTeamModal = ({ setVisible, refreshTeams }) => {
     }
 
     if (!result.canceled) {
-      setImageUri(result.assets[0].uri); // Ensure it's a string
+      setImageUri(result.assets[0].uri);
     }
-  };
+  }, []);
 
-  const uploadImage = async (uri) => {
+  const uploadImage = useCallback(async (uri) => {
     if (!uri) return null;
     const response = await fetch(uri);
     const blob = await response.blob();
@@ -502,9 +521,9 @@ const CreateTeamModal = ({ setVisible, refreshTeams }) => {
         }
       );
     });
-  };
+  }, []);
 
-  const handleCreateTeam = async () => {
+  const handleCreateTeam = useCallback(async () => {
     if (!teamName.trim() || !imageUri) {
       Alert.alert('Missing information', 'Please provide a team name and select an image.');
       return;
@@ -541,76 +560,95 @@ const CreateTeamModal = ({ setVisible, refreshTeams }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [teamName, imageUri]);
 
   return (
-    <View style={styles.modalView}>
-      <Text style={styles.modalTitle}>Create New Team</Text>
-      <TextInput
-        placeholder="Enter Team Name.."
-        value={teamName}
-        placeholderTextColor='white'
-        onChangeText={setTeamName}
-        style={styles.input}
-        editable={!loading}
-      />
-      <TouchableOpacity onPress={() => setImagePickerModalVisible(true)} disabled={loading}>
-        <Image
-          source={imageUri ? { uri: imageUri } : require('../../assets/addImg.png')}
-          style={styles.image}
-        />
-      </TouchableOpacity>
-      <View style={styles.buttonRow}>
-        {loading ? (
-          <ActivityIndicator size="large" color="#ffffff" />
-        ) : (
-          <>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleCreateTeam}>
-              <Text style={styles.buttonText}>Create</Text>
+    <Modal
+      transparent={true}
+      visible={true}
+      animationType="slide"
+      onRequestClose={() => setVisible(false)}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <SafeAreaView style={styles.safeArea}>
+          <KeyboardAvoidingView behavior="padding" style={styles.modalView}>
+            <Text style={styles.modalTitle}>Create New Team</Text>
+            <TextInput
+              placeholder="Enter Team Name.."
+              value={teamName}
+              placeholderTextColor='gray'
+              onChangeText={setTeamName}
+              style={styles.input}
+              editable={!loading}
+              ref={TextInputRef}
+              onFocus={() => console.log('Input focused')}
+            />
+            <TouchableOpacity onPress={() => setImagePickerModalVisible(true)} disabled={loading}>
+              <Image
+                source={imageUri ? { uri: imageUri } : require('../../assets/addImg.png')}
+                style={styles.image}
+              />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => setVisible(false)} disabled={loading}>
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-
-      <Modal
-        transparent={true}
-        visible={imagePickerModalVisible}
-        animationType="slide"
-        onRequestClose={() => setImagePickerModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.imagePickerModal}>
-            <Text style={styles.imagePickerTitle}>Select Image</Text>
-            <Text style={styles.imagePickerSubtitle}>Choose the source of the image</Text>
-            <View style={styles.imagePickerOptions}>
-              <TouchableOpacity onPress={() => selectImage('camera')}>
-                <Text style={styles.imagePickerOptionText}>Camera</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => selectImage('library')}>
-                <Text style={styles.imagePickerOptionText}>Library</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setImagePickerModalVisible(false)}>
-                <Text style={styles.imagePickerOptionText}>Cancel</Text>
-              </TouchableOpacity>
+            <View style={styles.buttonRow}>
+              {loading ? (
+                <ActivityIndicator size="large" color="#ffffff" />
+              ) : (
+                <>
+                  <TouchableOpacity style={[styles.button, styles.createButton]} onPress={handleCreateTeam}>
+                    <Text style={styles.buttonText}>Create</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => setVisible(false)} disabled={loading}>
+                    <Text style={styles.buttonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
-          </View>
-        </View>
-      </Modal>
-    </View>
+
+            <Modal
+              transparent={true}
+              visible={imagePickerModalVisible}
+              animationType="slide"
+              onRequestClose={() => setImagePickerModalVisible(false)}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.imagePickerModal}>
+                  <Text style={styles.imagePickerTitle}>Select Image</Text>
+                  <Text style={styles.imagePickerSubtitle}>Choose the source of the image</Text>
+                  <View style={styles.imagePickerOptions}>
+                    <TouchableOpacity onPress={() => selectImage('camera')}>
+                      <Text style={styles.imagePickerOptionText}>Camera</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => selectImage('library')}>
+                      <Text style={styles.imagePickerOptionText}>Library</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setImagePickerModalVisible(false)}>
+                      <Text style={styles.imagePickerOptionText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </Modal>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
+    </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'black', // Dim background when modal is open
+  },
   modalView: {
-    margin: 20,
-    backgroundColor: 'rgba(172, 188, 198, 1.1)',
+    width: screenWidth * 0.8,
+  backgroundColor: 'black',
     borderRadius: 20,
     padding: 35,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: 'white',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -618,7 +656,6 @@ const styles = StyleSheet.create({
   },
   button: {
     elevation: 5,
-    backgroundColor: 'rgba(172, 188, 198, 1.7)',
     padding: 10,
     borderRadius: 5,
     justifyContent: 'space-between',
@@ -626,32 +663,44 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: 'white',
-    fontSize: 19,
+    fontSize: 17,
   },
-  cancelButton: {
-    width: '45%',
+  createButton: {
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',backgroundColor: 'rgba(172, 188, 198, 0.13)',
+    width: 100,
     elevation: 5,
     paddingVertical: 10,
     marginHorizontal: 5, // Add margin between the buttons
     paddingHorizontal: 20,
-    backgroundColor: 'rgba(172, 188, 198, .7)', // Change this to your desired button color
     borderRadius: 90,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20, // Add some margin to separate the button from the list
+  },
+  cancelButton: {
+    backgroundColor: 'rgba(172, 188, 198, .7)',backgroundColor: 'rgba(172, 188, 198, 0.13)',
+    width: 100,
+    elevation: 5,
+    paddingVertical: 10,
+    marginHorizontal: 5, // Add margin between the buttons
+    paddingHorizontal: 20,
+    borderRadius: 80,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20, // Add some margin to separate the button from the list
   },
   buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between', // Adjust this as needed
+    justifyContent: 'center',
     marginTop: 20, // Add some margin to separate from other elements
   },
   modalTitle: {
-    fontSize: 24,
-    marginBottom: 15,
+    fontSize: 22,
+    marginBottom: 13,
     color: 'white',
   },
   input: {
-    height: 40,
+    height: 39,
     borderColor: '#ccc',
     borderWidth: 1,
     marginBottom: 12,
@@ -679,13 +728,13 @@ const styles = StyleSheet.create({
   },
   imagePickerModal: {
     width: '80%',
-    backgroundColor: 'rgba(172, 188, 198, 1.1)',
+    backgroundColor: 'rgba(172, 188, 198, 1.1)',backgroundColor: 'black',
     borderRadius: 10,
-    padding: 20,
+    padding: 40,
     alignItems: 'center',
   },
   imagePickerTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 10,
@@ -706,4 +755,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CreateTeamModal;
+export default React.memo(CreateTeamModal);

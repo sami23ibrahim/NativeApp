@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet, Modal, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, TextInput, Alert, StyleSheet, Modal, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
 import { getAuth, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+
+const { width } = Dimensions.get('window');
 
 const ChangePassword = () => {
   const [newPassword, setNewPassword] = useState('');
@@ -11,7 +13,7 @@ const ChangePassword = () => {
   const [action, setAction] = useState('');
   const auth = getAuth();
 
-  const handleReauthenticate = async () => {
+  const handleReauthenticate = useCallback(async () => {
     try {
       const user = auth.currentUser;
       const credential = EmailAuthProvider.credential(user.email, currentPassword);
@@ -22,9 +24,9 @@ const ChangePassword = () => {
       console.error('Reauthentication Error:', error);
       Alert.alert('Error', error.message);
     }
-  };
+  }, [auth, currentPassword]);
 
-  const handlePasswordChange = () => {
+  const handlePasswordChange = useCallback(() => {
     if (newPassword.trim() === '' || confirmNewPassword.trim() === '') {
       Alert.alert('Error', 'Please enter a valid password.');
       return;
@@ -37,9 +39,9 @@ const ChangePassword = () => {
     setPasswordMismatch(false);
     setAction('password');
     setModalVisible(true);
-  };
+  }, [newPassword, confirmNewPassword]);
 
-  const updatePasswordAfterReauthentication = async () => {
+  const updatePasswordAfterReauthentication = useCallback(async () => {
     try {
       const user = auth.currentUser;
       await updatePassword(user, newPassword);
@@ -48,26 +50,31 @@ const ChangePassword = () => {
       console.error('Password Change Error:', error);
       Alert.alert('Error', error.message);
     }
-  };
+  }, [auth, newPassword]);
+
+  const inputStyle = useMemo(() => [
+    styles.input,
+    passwordMismatch && { borderColor: 'red' }
+  ], [passwordMismatch]);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Update Password</Text>
       <TextInput
-        placeholder="New Password"
-        placeholderTextColor={"white"}
+        placeholder=" New Password"
+        placeholderTextColor={"gray"}
         value={newPassword}
         onChangeText={setNewPassword}
         secureTextEntry
-        style={[styles.input, passwordMismatch && { borderColor: 'red' }]}
+        style={inputStyle}
       />
       <TextInput
-        placeholder="Confirm New Password"
-        placeholderTextColor={"white"}
+        placeholder=" Confirm New Password"
+        placeholderTextColor={"gray"}
         value={confirmNewPassword}
         onChangeText={setConfirmNewPassword}
         secureTextEntry
-        style={[styles.input, passwordMismatch && { borderColor: 'red' }]}
+        style={inputStyle}
       />
       <TouchableOpacity style={styles.button} onPress={handlePasswordChange}>
         <Text style={styles.buttonText}>Update Password</Text>
@@ -82,8 +89,8 @@ const ChangePassword = () => {
         <View style={styles.modalView}>
           <Text style={styles.modalText}>Please reauthenticate to proceed</Text>
           <TextInput
-            placeholder="Current Password"
-            placeholderTextColor={"white"}
+            placeholder=" Current Password"
+            placeholderTextColor={"gray"}
             value={currentPassword}
             onChangeText={setCurrentPassword}
             secureTextEntry
@@ -99,7 +106,7 @@ const ChangePassword = () => {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -108,14 +115,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: '#9cacbc',
+    backgroundColor: 'black',
   },
   title: {
     fontSize: 28,
     marginBottom: 40,
     color: 'white',
-    textAlign: 'center',fontWeight: 'bold',
-
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
   input: {
     height: 40,
@@ -125,7 +132,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     paddingHorizontal: 8,
     width: '88%',
-    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',  backgroundColor: 'rgba(172, 188, 198, 0.13)',
     alignSelf: 'center',
     color: 'white',
   },
@@ -141,7 +148,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',  backgroundColor: 'rgba(172, 188, 198, 0.13)',
     borderRadius: 90,
     alignItems: 'center',
     justifyContent: 'center',

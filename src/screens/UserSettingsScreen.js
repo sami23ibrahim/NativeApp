@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#9cacbc',
+    backgroundColor: '#9cacbc',backgroundColor: 'black',
   },
   optionContainer: {
     flexDirection: 'row',
@@ -463,7 +463,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 15,
     marginVertical: 10,
-    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',     backgroundColor: 'rgba(172, 188, 198, 0.33)',
+
     borderRadius: 10,
   },
   optionText: {

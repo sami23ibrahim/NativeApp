@@ -185,13 +185,14 @@
 // });
 
 // export default DeleteAccount;
-
-import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Alert, StyleSheet, Modal, ActivityIndicator,TouchableOpacity } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, TextInput, Alert, StyleSheet, Modal, ActivityIndicator, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
 import { getAuth, deleteUser, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { doc, deleteDoc, getDoc, updateDoc, arrayRemove, collection, getDocs } from 'firebase/firestore';
 import { deleteObject, ref } from 'firebase/storage';
-import { db, storage } from '../config/firebase'; // Ensure this import matches your Firebase config
+import { db, storage } from '../config/firebase';
+
+const { width } = Dimensions.get('window');
 
 const DeleteAccount = ({ navigation }) => {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -199,7 +200,7 @@ const DeleteAccount = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const auth = getAuth();
 
-  const handleReauthenticate = async () => {
+  const handleReauthenticate = useCallback(async () => {
     try {
       setLoading(true);
       const user = auth.currentUser;
@@ -212,23 +213,21 @@ const DeleteAccount = ({ navigation }) => {
       Alert.alert('Error', error.message);
       setLoading(false);
     }
-  };
+  }, [auth, currentPassword]);
 
-  const deleteTeam = async (teamId) => {
+  const deleteTeam = useCallback(async (teamId) => {
     try {
       const teamRef = doc(db, 'teams', teamId);
       const teamDoc = await getDoc(teamRef);
       if (teamDoc.exists()) {
         const teamData = teamDoc.data();
 
-        // Delete associated categories and items
         const categoriesQuerySnapshot = await getDocs(collection(db, 'categories'));
         for (const categoryDoc of categoriesQuerySnapshot.docs) {
           const categoryData = categoryDoc.data();
           if (categoryData.teamId === teamId) {
             const itemsQuerySnapshot = await getDocs(collection(db, 'categories', categoryDoc.id, 'items'));
             for (const itemDoc of itemsQuerySnapshot.docs) {
-              // Delete item document and associated image
               await deleteDoc(doc(db, 'categories', categoryDoc.id, 'items', itemDoc.id));
               const itemData = itemDoc.data();
               if (itemData.img) {
@@ -236,7 +235,6 @@ const DeleteAccount = ({ navigation }) => {
                 await deleteObject(imgRef);
               }
             }
-            // Delete category document and associated image
             if (categoryData.img) {
               const categoryImgRef = ref(storage, categoryData.img);
               await deleteObject(categoryImgRef);
@@ -245,42 +243,35 @@ const DeleteAccount = ({ navigation }) => {
           }
         }
 
-        // Delete team image
         if (teamData.imageUrl) {
           const teamImgRef = ref(storage, teamData.imageUrl);
           await deleteObject(teamImgRef);
         }
 
-        // Delete the team document
         await deleteDoc(teamRef);
       }
     } catch (error) {
       console.error('Error deleting team: ', error);
     }
-  };
+  }, []);
 
-  const handleAccountDeletion = async () => {
+  const handleAccountDeletion = useCallback(async () => {
     try {
       const user = auth.currentUser;
       const userDocRef = doc(db, 'users', user.uid);
-  
-      // Fetch the user document
       const userDoc = await getDoc(userDocRef);
       if (userDoc.exists()) {
         const userData = userDoc.data();
         const teams = userData.teams || [];
-  
-        // Loop through each team and check if the user is the owner
+
         for (const team of teams) {
           const teamDocRef = doc(db, 'teams', team.teamId);
           const teamDoc = await getDoc(teamDocRef);
           if (teamDoc.exists()) {
             const teamData = teamDoc.data();
             if (teamData.owner.uid === user.uid) {
-              // If the user is the owner, delete the team
               await deleteTeam(team.teamId);
             } else {
-              // Remove the user from the team members array
               const member = teamData.members.find(m => m.uid === user.uid);
               if (member) {
                 await updateDoc(teamDocRef, {
@@ -290,24 +281,19 @@ const DeleteAccount = ({ navigation }) => {
             }
           }
         }
-  
-        // Delete the user's image from Firebase Storage
+
         if (userData.imageUrl) {
           const userImgRef = ref(storage, userData.imageUrl);
           await deleteObject(userImgRef);
         }
-  
-        // Delete user from Firestore
+
         await deleteDoc(userDocRef);
-  
-        // Delete user from Firebase Authentication
         await deleteUser(user);
-  
-        // Delay before navigation to ensure all async operations complete
+
         setTimeout(() => {
           navigation.navigate('Login');
           Alert.alert('Success', 'Account deleted successfully.');
-        }, 2000); // 2 seconds delay
+        }, 2000);
       } else {
         throw new Error('User document does not exist.');
       }
@@ -318,17 +304,19 @@ const DeleteAccount = ({ navigation }) => {
         setModalVisible(true);
       }
     }
-  };
-  
+  }, [auth, navigation, deleteTeam]);
+
+  const inputStyle = useMemo(() => [
+    styles.input
+  ], []);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>Delete Account</Text>
       <Text style={styles.warningText}>
-  Please ensure that you want to delete your account. Upon confirmation, you will lose access to all teams permanently, and all your data will be removed. This action is irreversible.
-</Text>
+        Please ensure that you want to delete your account. Upon confirmation, you will lose access to all teams permanently, and all your data will be removed. This action is irreversible.
+      </Text>
 
-      {/* <Button title="Delete Account" onPress={() => setModalVisible(true)} style={styles.button} /> */}
       <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
         <Text style={styles.buttonText}>Delete My Account</Text>
       </TouchableOpacity>
@@ -340,7 +328,7 @@ const DeleteAccount = ({ navigation }) => {
       >
         <View style={styles.modalView}>
           {loading ? (
-            <ActivityIndicator size="large" color="#0000ff" />
+            <ActivityIndicator size="large" color="white" />
           ) : (
             <>
               <Text style={styles.modalText}>Please reauthenticate to proceed</Text>
@@ -350,24 +338,21 @@ const DeleteAccount = ({ navigation }) => {
                 onChangeText={setCurrentPassword}
                 secureTextEntry
                 placeholderTextColor={"white"}
-                style={styles.input}
+                style={inputStyle}
               />
-  <View style={styles.modalButtonContainer}>
-
-
-  <TouchableOpacity style={styles.modalButton} onPress={handleReauthenticate}>
-              <Text style={styles.buttonText}>Reauthenticate</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.modalButton} onPress={() => setModalVisible(false)}>
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
+              <View style={styles.modalButtonContainer}>
+                <TouchableOpacity style={styles.modalButton} onPress={handleReauthenticate}>
+                  <Text style={styles.buttonText}>Reauthenticate</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.modalButton} onPress={() => setModalVisible(false)}>
+                  <Text style={styles.buttonText}>Cancel</Text>
+                </TouchableOpacity>
               </View>
             </>
           )}
         </View>
       </Modal>
-    </View>
-
+    </SafeAreaView>
   );
 };
 
@@ -376,9 +361,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 16,
-    backgroundColor: '#9cacbc',
+    backgroundColor: 'black',
   },
- 
   title: {
     fontSize: 28,
     marginBottom: 10,
@@ -390,7 +374,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',  backgroundColor: 'rgba(172, 188, 198, 0.13)',
     borderRadius: 90,
     alignItems: 'center',
     justifyContent: 'center',
@@ -404,26 +388,27 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: 'bold',
   },
   modalButton: {
     flex: 1,
     elevation: 5,
     paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingHorizontal: 8,
     backgroundColor: 'rgba(172, 188, 198, 1.7)',
     borderRadius: 90,
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 5,
+    marginHorizontal: 1,
   },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
     padding: 10,
     marginBottom: 20,
-    borderRadius: 25,color:'white',
+    borderRadius: 25,
+    color: 'white',
   },
   modalView: {
     margin: 20,

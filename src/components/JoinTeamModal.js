@@ -277,11 +277,13 @@
 // export default JoinTeamModal;
 // JoinTeamModal.js
 import React, { useState, useContext } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert,TouchableOpacity } from 'react-native';
+import { View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity, Dimensions, SafeAreaView } from 'react-native';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import { FIREBASE_AUTH } from '../config/firebase';
 import { NotificationContext } from './NotificationProvider'; // Correctly import NotificationContext
 import { addNotification as addNotificationUtil } from './notificationUtils'; // Import addNotification function correctly
+
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const JoinTeamModal = ({ setVisible, refreshTeams }) => {
   const [teamId, setTeamId] = useState('');
@@ -340,54 +342,54 @@ const JoinTeamModal = ({ setVisible, refreshTeams }) => {
   };
 
   return (
-    <View style={styles.modalView}>
-      <Text style={styles.modalTitle}>Join Existing Team</Text>
-      <TextInput
-        placeholder="Enter Team ID"
-        value={teamId}
-        placeholderTextColor='white'
-        onChangeText={setTeamId}
-        style={styles.input}
-      />
-      {/* <View style={styles.buttons}>
-        <Button title="Send Request" padding={23} color={'#9cacbc'} onPress={handleJoinTeam} />
-        <Button title="Cancel" color={'#9cacbc'} onPress={() => setVisible(false)} />
-      </View> */}
-      <View style={styles.buttonRow}>
-  <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleJoinTeam}>
-    <Text style={styles.buttonText}>Send Request</Text>
-  </TouchableOpacity>
-  <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => setVisible(false)}>
-    <Text style={styles.buttonText}>Cancel</Text>
-  </TouchableOpacity>
-</View>
-
-
-
-
-
-
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.modalView}>
+        <Text style={styles.modalTitle}>Join Existing Team</Text>
+        <TextInput
+          placeholder="  Enter Team ID"
+          value={teamId}
+          placeholderTextColor='gray'
+          onChangeText={setTeamId}
+          style={styles.input}
+        />
+        <View style={styles.buttonRow}>
+          <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={handleJoinTeam}>
+            <Text style={styles.buttonText}>Send</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => setVisible(false)}>
+            <Text style={styles.buttonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)', // Dim background when modal is open
+  },
   modalView: {
-    margin: 20,
-    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    width: screenWidth * 0.8,
+    backgroundColor: 'black',
     borderRadius: 20,
     padding: 35,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: 'white',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
   },
   button: {
-    elevation: 5,backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    elevation: 5,
+    backgroundColor: 'rgba(172, 188, 198, 0.13)',
     padding: 10,
-    borderRadius: 5,  justifyContent: 'space-between',
+    borderRadius: 5,
+    justifyContent: 'space-between',
     marginVertical: 2,
   },
   buttonText: {
@@ -395,11 +397,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   cancelButton: {
-    width:'55%',
+    backgroundColor: 'rgba(172, 188, 198, 0.13)',
+    width: 100,
     elevation: 5,
-    paddingVertical: 10,marginHorizontal: 5, // Add margin between the buttons
+    paddingVertical: 10,
+    marginHorizontal: 5, // Add margin between the buttons
     paddingHorizontal: 20,
-    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Change this to your desired button color
     borderRadius: 90,
     alignItems: 'center',
     justifyContent: 'center',
@@ -409,7 +412,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between', // Adjust this as needed
     marginTop: 20, // Add some margin to separate from other elements
-   
   },
   modalTitle: {
     fontSize: 24,

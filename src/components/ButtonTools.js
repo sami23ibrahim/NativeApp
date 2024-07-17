@@ -15,13 +15,12 @@ const ButtonTools = ({ buttons = [] }) => {
                 console.log(`Button ${button.label} pressed`);
                 button.onPress();
               } else {
-                console.log(`Button ${button.label} does not have a valid onPress function`);
               }
             }}
             style={styles.buttonWrapper}
           >
             <View style={styles.iconContainer}>
-              <MaterialCommunityIcons name={button.iconName} size={30} color="white" />
+              <MaterialCommunityIcons name={button.iconName} size={30} color='rgba(150, 150, 150, 0.93)' /> 
             </View>
             {button.label && <Text style={styles.label}>{button.label}</Text>}
           </TouchableOpacity>
@@ -35,32 +34,34 @@ const styles = StyleSheet.create({
   wrapper: {
     flexDirection: 'row',
     justifyContent: 'space-evenly',
-    backgroundColor: '#9cacbc',
-    padding:3,
+   backgroundColor: 'black',
+    padding:1,
     borderRadius: 10,
     marginTop: 2,
   },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 5,marginTop: 2,
+    marginRight: 5,marginTop: 0,
   },
   buttonWrapper: {
     alignItems: 'center',
-    marginHorizontal: 25,
+    marginHorizontal: 15,
   },
   iconContainer: {
-    backgroundColor: 'rgba(172, 188, 198, 0.33)',
+     backgroundColor: 'black',
     borderRadius: 45,
     padding: 5,
     justifyContent: 'center',
     alignItems: 'center',
   },
   label: {
-    color: 'white',
+    color: 'rgba(150, 150, 150, 0.83)',
     marginTop: 1,
     textAlign: 'center',
   },
 });
 
 export default ButtonTools;
+
+

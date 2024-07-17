@@ -35,12 +35,12 @@ const PasswordResetScreen = ({ navigation }) => {
       </View>
       <TextInput
         style={styles.input}
-        placeholder="Enter your email"
+        placeholder=" Enter your email"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
         autoCapitalize="none"
-        placeholderTextColor="white"
+        placeholderTextColor="gray"
       />
       <TouchableOpacity style={styles.button} onPress={handlePasswordReset}>
         <Text style={styles.buttonText}>Send Password Reset Link</Text>
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center', 
     padding: 16,
-    backgroundColor: '#9cacbc',
+    backgroundColor: 'black',
   },
   imagePlaceholder: {
     alignItems: 'center',
@@ -75,13 +75,13 @@ const styles = StyleSheet.create({
   },
   input: {
     height: 40,
-    borderColor: '#ccc',
+    borderColor: '#ccc', borderColor: '#ccc',
     borderWidth: 1.3,
     borderRadius: 20,
     marginBottom: 15,
     paddingHorizontal: 8,
     width: '88%',
-    backgroundColor: '#9cacbc',
+    backgroundColor: 'rgba(172, 188, 198, 0.13)',
     color: 'white',
     alignSelf: 'center',
   },
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', backgroundColor: 'rgba(172, 188, 198, 0.13)',
     borderRadius: 90,
     alignItems: 'center',
     justifyContent: 'center',

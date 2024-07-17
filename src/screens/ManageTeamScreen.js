@@ -491,12 +491,17 @@
 
 // export default ManageTeamScreen;
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, Image, Share, TouchableOpacity } from 'react-native';
+
+
+
+
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, Text, FlatList, StyleSheet, Alert, Image, Share, TouchableOpacity, SafeAreaView, Dimensions } from 'react-native';
 import { getFirestore, doc, getDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { FIREBASE_AUTH } from '../config/firebase';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Menu, MenuOptions, MenuOption, MenuTrigger } from 'react-native-popup-menu';
+import { useFocusEffect } from '@react-navigation/native';
 
 const ManageTeamScreen = ({ route }) => {
   const { teamId, teamName } = route.params;
@@ -516,33 +521,33 @@ const ManageTeamScreen = ({ route }) => {
     }
   };
 
-  useEffect(() => {
-    const fetchTeamMembers = async () => {
-      try {
-        const teamDoc = await getDoc(doc(firestore, 'teams', teamId));
-        if (teamDoc.exists()) {
-          const teamData = teamDoc.data();
-          const members = teamData.members.map(member => {
-            return {
+  useFocusEffect(
+    useCallback(() => {
+      const fetchTeamMembers = async () => {
+        try {
+          const teamDoc = await getDoc(doc(firestore, 'teams', teamId));
+          if (teamDoc.exists()) {
+            const teamData = teamDoc.data();
+            const members = teamData.members.map(member => ({
               ...member,
               role: member.admin ? 'admin' : 'member',
               isOwner: member.uid === teamData.owner.uid,
               imageUrl: member.imageUrl || 'https://via.placeholder.com/50',
-            };
-          });
-          setTeamMembers(members);
-          setIsOwner(teamData.owner.uid === user.uid);
-        } else {
-          Alert.alert('Error', 'Team not found.');
+            }));
+            setTeamMembers(members);
+            setIsOwner(teamData.owner.uid === user.uid);
+          } else {
+            Alert.alert('Error', 'Team not found.');
+          }
+        } catch (error) {
+          console.error('Error fetching team members:', error);
+          Alert.alert('Error', 'Failed to fetch team members.');
         }
-      } catch (error) {
-        console.error('Error fetching team members:', error);
-        Alert.alert('Error', 'Failed to fetch team members.');
-      }
-    };
+      };
 
-    fetchTeamMembers();
-  }, [teamId]);
+      fetchTeamMembers();
+    }, [firestore, teamId, user.uid])
+  );
 
   useEffect(() => {
     const q = query(collection(firestore, 'joinRequests'), where('teamId', '==', teamId), where('status', '==', 'pending'));
@@ -552,7 +557,7 @@ const ManageTeamScreen = ({ route }) => {
     });
 
     return () => unsubscribe();
-  }, [teamId]);
+  }, [firestore, teamId]);
 
   const handleRequest = async (requestId, action) => {
     try {
@@ -567,18 +572,15 @@ const ManageTeamScreen = ({ route }) => {
       const teamRef = doc(firestore, 'teams', requestData.teamId);
 
       if (action === 'approve') {
-        // Check if the user exists before approving the request
         const userRef = doc(firestore, 'users', requestData.userId);
         const userDoc = await getDoc(userRef);
 
         if (!userDoc.exists()) {
-          // If user doesn't exist, alert the owner and delete the request
           Alert.alert('Error', 'User no longer exists.');
           await deleteDoc(requestRef);
           return;
         }
 
-        // Proceed with approval if user exists
         await updateDoc(teamRef, {
           members: arrayUnion({
             uid: requestData.userId,
@@ -610,30 +612,53 @@ const ManageTeamScreen = ({ route }) => {
       const teamRef = doc(firestore, 'teams', teamId);
       const userRef = doc(firestore, 'users', member.uid);
 
-      // Fetch the latest team document
       const teamDoc = await getDoc(teamRef);
       const teamData = teamDoc.data();
 
-      // Find the member object in the team members array
       const memberToRemove = teamData.members.find(m => m.uid === member.uid);
 
-      // Remove user from the team's members array
       await updateDoc(teamRef, {
         members: arrayRemove(memberToRemove)
       });
 
-      // Remove team from the user's teams array
       await updateDoc(userRef, {
         teams: arrayRemove({ teamId, uid: member.uid })
       });
 
-      // Update the team members state
       setTeamMembers((prevMembers) => prevMembers.filter((m) => m.uid !== member.uid));
 
       Alert.alert('Success', 'User has been removed.');
     } catch (error) {
       console.error('Error removing user:', error);
       Alert.alert('Error', 'Failed to remove user.');
+    }
+  };
+
+  const toggleAdminStatus = async (member) => {
+    try {
+      const teamRef = doc(firestore, 'teams', teamId);
+      const teamDoc = await getDoc(teamRef);
+
+      if (!teamDoc.exists()) {
+        throw new Error('Team document does not exist.');
+      }
+
+      const teamData = teamDoc.data();
+
+      if (!teamData || !Array.isArray(teamData.members)) {
+        throw new Error('Invalid team data.');
+      }
+
+      const updatedMembers = teamData.members.map(m =>
+        m.uid === member.uid ? { ...m, admin: !m.admin } : m
+      );
+
+      await updateDoc(teamRef, { members: updatedMembers });
+
+      setTeamMembers(updatedMembers);
+    } catch (error) {
+      console.error('Error toggling admin status:', error);
+      Alert.alert('Error', 'Failed to update admin status.');
     }
   };
 
@@ -652,9 +677,32 @@ const ManageTeamScreen = ({ route }) => {
           <MenuTrigger>
             <MaterialCommunityIcons name="dots-vertical" size={24} color="white" />
           </MenuTrigger>
-          <MenuOptions>
-            <MenuOption onSelect={() => toggleAdminStatus(item)} text={item.admin ? 'Remove Admin' : 'Make Admin'} />
-            <MenuOption onSelect={() => deleteUser(item)} text="Remove User" />
+          <MenuOptions
+          customStyles={{
+            optionsContainer: {
+              paddingVertical: 10,
+              borderRadius: 20,
+              paddingHorizontal: 15,
+              backgroundColor: 'rgba(105,105,105, 0.99)',
+              fontSize: 28,
+              color: 'white',
+            },
+          }}
+
+          >
+            <MenuOption onSelect={() => toggleAdminStatus(item)} text={item.admin ? 'Remove Admin' : 'Make Admin'} 
+                customStyles={{
+                  optionText: {
+                    color: 'white', fontSize: 22 // change to your desired text color
+                  },}}
+              />
+            <MenuOption onSelect={() => deleteUser(item)} text="Remove User"
+             customStyles={{
+              optionText: {
+                color: 'white', fontSize: 22  // change to your desired text color
+              },
+            }}
+            />
           </MenuOptions>
         </Menu>
       )}
@@ -669,67 +717,68 @@ const ManageTeamScreen = ({ route }) => {
         <Text style={styles.memberRole}>Pending</Text>
       </View>
       {isOwner && (
-      <View style={styles.requestActions}>
-      <TouchableOpacity onPress={() => handleRequest(item.id, 'approve')} style={styles.iconButton}>
-        <View style={styles.iconBackground}>
-          <MaterialCommunityIcons name="thumb-up" size={26} color="white" />
+        <View style={styles.requestActions}>
+          <TouchableOpacity onPress={() => handleRequest(item.id, 'approve')} style={styles.iconButton}>
+            <View style={styles.iconBackground}>
+              <MaterialCommunityIcons name="thumb-up" size={26} color="white" />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleRequest(item.id, 'reject')} style={styles.iconButton}>
+            <View style={styles.iconBackground}>
+              <MaterialCommunityIcons name="thumb-down" size={26} color="white" />
+            </View>
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => handleRequest(item.id, 'reject')} style={styles.iconButton}>
-        <View style={styles.iconBackground}>
-          <MaterialCommunityIcons name="thumb-down" size={26} color="white" />
-        </View>
-      </TouchableOpacity>
-    </View>
-    
-     
       )}
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title}>{teamName} Members:</Text>
       <FlatList
-        data={teamMembers}
-        keyExtractor={(item) => item.uid}
-        renderItem={renderMemberItem}
+      data={joinRequests}
+      keyExtractor={(item) => item.id}
+      renderItem={renderJoinRequestItem}
+       
         ListFooterComponent={
           <FlatList
-            data={joinRequests}
-            keyExtractor={(item) => item.id}
-            renderItem={renderJoinRequestItem}
+          data={teamMembers}
+          keyExtractor={(item) => item.uid}
+          renderItem={renderMemberItem}
           />
         }
       />
       <TouchableOpacity style={styles.primaryButton} onPress={shareTeamId}>
         <Text style={styles.buttonText}>Share Invitation Code</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 };
+
+const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#9cacbc',
+   backgroundColor: 'black',
   },
   primaryButton: {
     elevation: 5,
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: 'rgba(172, 188, 198, 1.7)', // Change this to your desired button color
+    backgroundColor: 'rgba(172, 188, 198, 0.23)',
     borderRadius: 90,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20, // Add some margin to separate the button from the list
+    marginBottom: 20,
   },
   buttonText: {
-    color: 'white', // Change this to your desired text color
+    color: 'white',
     fontSize: 16,
     fontWeight: 'bold',
-    textAlign: 'center', // Ensures the text is centered
+    textAlign: 'center',
   },
   title: {
     fontSize: 28,
@@ -740,27 +789,26 @@ const styles = StyleSheet.create({
   memberItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    borderBottomWidth: 1,
+    padding: 2,
+    borderBottomWidth: 0.2,
     borderBottomColor: '#ccc',
   },
   memberImage: {
-    width: 75,
-    height: 75,
-    borderRadius: 90,
-    marginRight: 25,
-    marginBottom: 8,
+    width: width * 0.17,
+    height: width * 0.17,
+    borderRadius: width * 0.1,
+    marginRight: 31,
+    marginBottom: 1,
   },
   memberInfo: {
     flex: 1,
-    color: '#f0f0f0',
   },
   nameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   memberName: {
-    fontSize: 21,
+    fontSize: 19,
     fontWeight: 'bold',
     marginTop: 8,
     color: '#f0f0f0',
@@ -779,17 +827,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconBackground: {
-    backgroundColor: 'rgba(172, 188, 198, 0.33)',
-    borderRadius: 50, // This makes the background a circle
-    padding: 10, // Adjust the padding to control the size of the background
+    backgroundColor: 'rgba(172, 188, 198, 0.43)',
+    borderRadius: 50,
+    padding: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
   requestActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: 120,
+    width: 111,width: width * 0.3,
+    height: width * 0.2,marginRight: 21,
   },
 });
 
-export default ManageTeamScreen;
+export default React.memo(ManageTeamScreen);

@@ -44,13 +44,13 @@ const CategorySearchBar = forwardRef(({ items, onSelect }, ref) => {
     <View style={styles.searchContainer}>
       <TextInput 
         style={styles.searchInput}
-        placeholder="Search Shelves..."
+        placeholder="  Search Shelves..."
         placeholderTextColor='white'
         value={query}
         onChangeText={setQuery}
       />
       {query.length > 0 && suggestions.length === 0 && (
-        <Text style={styles.noResults}>No matches found</Text>
+        <Text style={styles.noResults}  >  No matches found</Text>
       )}
       {suggestions.length > 0 && (
         <View style={styles.suggestionsContainer}>
@@ -71,46 +71,55 @@ const CategorySearchBar = forwardRef(({ items, onSelect }, ref) => {
 
 const styles = StyleSheet.create({
   searchContainer: {
-    padding: 14,
+    padding: 11,
     width: '95%', 
-    borderRadius: 0,
+    borderRadius: 50,
     alignSelf: 'center',
-    backgroundColor: '#9cacbc',
+    backgroundColor: 'black',
+    zIndex: 1,
   },
   searchInput: {
-    height: 50,
+    height: 45,
     borderRadius: 40,
     borderColor: '#ccc',
     borderWidth: 2.4,
     paddingLeft: 13,
-    color: 'white',
+    color: 'white', // Set text color to white
   },
   noResults: {
-    padding: 10,
-    color: '#ccc',
-    backgroundColor: '#9cacbc',
-    width: '95%', 
+    padding: 12,
+    color: 'white', 
+    backgroundColor: 'black',
+    width: '90%', 
     borderRadius: 40,
     alignSelf: 'center',
     borderColor: '#ccc',
     borderWidth: 2,
+    marginTop: 4,
+    zIndex: 1,
+    position: 'absolute',
+    top: 55,
   },
   suggestionsContainer: {
-    backgroundColor: '#9cacbc',
+    backgroundColor: 'black',
     borderColor: '#ccc',
     borderWidth: 2,
     marginTop: 5,
     borderRadius: 10,
-    width: '95%',
+    width: '90%',  
     alignSelf: 'center',
+    zIndex: 2,
+    position: 'absolute',
+    top: 55, // Adjust this value based on your input height and padding
   },
   suggestionItem: {
     padding: 10,
     borderBottomWidth: 0.2,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#ccc',
   },
   suggestionText: {
     color: 'white',
+    fontSize: 18,
   },
 });
 
