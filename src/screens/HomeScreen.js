@@ -4489,7 +4489,7 @@ const HomeScreen = ({ navigation }) => {
         >
           <Image source={{ uri: item.imageUrl }} style={styles.teamImage} />
           <View style={styles.teamInfo}>
-            <Text style={styles.teamName}>{item.name.toUpperCase()}</Text>
+            <Text style={styles.teamName}>{item.name}</Text>
             <View style={styles.nameContainer}>
               <Text style={styles.teamMembersDetail}>By {item.owner.name.toUpperCase()}</Text>
             </View>
@@ -4787,12 +4787,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    width: '95%',
+    width: '95%', 
     alignSelf: 'center',
     padding: scaleSize(1),
-    marginVertical: scaleSize(4),
+    marginVertical: scaleSize(4),height: scaleSize(112),
     backgroundColor: 'rgba(172, 188, 198, 0.20)',
-    borderRadius: scaleSize(30),
+    borderRadius: scaleSize(25),
   },
   noTeamsContainer: {
     flex: 1,
@@ -4821,9 +4821,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   teamImage: {
-    width: scaleSize(130),
-    height: scaleSize(130),
-    borderRadius: scaleSize(25),
+    width: scaleSize(151),
+    height: scaleSize(105),
+    borderRadius: scaleSize(25),marginLeft:scaleSize(3), marginBottom: scaleSize(3),marginTop: scaleSize(3),
   },
   teamInfo: {
     marginLeft: scaleSize(16),
@@ -4831,7 +4831,7 @@ const styles = StyleSheet.create({
   },
   teamName: {
     fontWeight: 'bold',
-    fontSize: scaleSize(24),
+    fontSize: scaleSize(20),
     color: '#f0f0f0',
   },
   teamDetail: {
