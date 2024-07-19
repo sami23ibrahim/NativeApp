@@ -3,7 +3,6 @@ import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const ButtonTools = ({ buttons = [] }) => {
-  console.log('ButtonTools received buttons:', buttons);
   return (
     <View style={styles.wrapper}>
       <View style={styles.container}>
@@ -42,11 +41,11 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 5,marginTop: 0,
+    marginRight: 15,marginTop: 0,marginLeft: 15
   },
   buttonWrapper: {
     alignItems: 'center',
-    marginHorizontal: 15,
+    marginHorizontal: 24,
   },
   iconContainer: {
      backgroundColor: 'black',

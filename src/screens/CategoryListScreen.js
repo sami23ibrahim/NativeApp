@@ -2784,6 +2784,865 @@
 
 
 
+// import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
+// import { 
+//   View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Dimensions, Modal, 
+//   TextInput, Alert, ActivityIndicator, TouchableWithoutFeedback, Animated, Keyboard, SafeAreaView
+// } from 'react-native';
+// import * as ImagePicker from 'expo-image-picker';
+// import { 
+//   getDocs, collection, addDoc, deleteDoc, doc, updateDoc, query, where, getDoc 
+// } from 'firebase/firestore';
+// import { storage, db } from '../config/firebase';
+// import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
+// import { useNavigation, useRoute } from '@react-navigation/native';
+// import { MaterialIcons } from '@expo/vector-icons';
+// import { FIREBASE_AUTH } from '../config/firebase';
+// import CategorySearchBar from '../components/CategorySearchBar';
+// import GetReport from '../components/GetReport';
+// import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+// import ButtonTools from '../components/ButtonTools';
+
+// const HEADER_HEIGHT = 92;
+// const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
+
+// const { width: SCREEN_WIDTH } = Dimensions.get('window');
+// const guidelineBaseWidth = 375;
+
+// const scaleSize = (size) => (SCREEN_WIDTH / guidelineBaseWidth) * size;
+
+// const CategoryListScreen = ({ navigation }) => {
+//   const [categories, setCategories] = useState([]);
+//   const [categoryName, setCategoryName] = useState('');
+//   const [imageUri, setImageUri] = useState(null);
+//   const [modalVisible, setModalVisible] = useState(false);
+//   const [loading, setLoading] = useState(false);
+//   const [menuVisible, setMenuVisible] = useState(false);
+//   const [selectedCategory, setSelectedCategory] = useState(null);
+//   const [menuCategory, setMenuCategory] = useState(null);
+//   const [userRole, setUserRole] = useState('');
+//   const [loadingRole, setLoadingRole] = useState(true);
+//   const [selectedCategoryForReport, setSelectedCategoryForReport] = useState(null);
+//   const [imagePickerModalVisible, setImagePickerModalVisible] = useState(false);
+
+//   const route = useRoute();
+//   const { teamId, teamName } = route.params;
+//   const numColumns = 2;
+//   const user = FIREBASE_AUTH.currentUser;
+//   const scrollY = useRef(new Animated.Value(0)).current;
+//   const flatListRef = useRef(null);
+//   const searchBarRef = useRef(null);
+
+//   useEffect(() => {
+//     navigation.setOptions({ title: `"${teamName.toUpperCase()}"` });
+//     fetchCategoriesAndRole();
+
+//     const unsubscribeFocus = navigation.addListener('focus', () => {
+//       setMenuVisible(false);
+//     });
+
+//     const unsubscribeBlur = navigation.addListener('blur', () => {
+//       setMenuVisible(false);
+//     });
+
+//     return () => {
+//       unsubscribeFocus();
+//       unsubscribeBlur();
+//     };
+//   }, [teamId, teamName, navigation]);
+
+//   const fetchCategoriesAndRole = useCallback(async () => {
+//     setLoadingRole(true);
+//     try {
+//       const q = query(collection(db, 'categories'), where('teamId', '==', teamId));
+//       const querySnapshot = await getDocs(q);
+//       const fetchedCategories = querySnapshot.docs.map(doc => ({
+//         id: doc.id,
+//         ...doc.data()
+//       }));
+//       setCategories(fetchedCategories);
+
+//       const teamDocRef = doc(db, 'teams', teamId);
+//       const teamDoc = await getDoc(teamDocRef);
+//       if (teamDoc.exists()) {
+//         const teamData = teamDoc.data();
+//         const member = teamData.members.find(m => m.uid === user.uid);
+//         if (member) {
+//           setUserRole(member.admin ? 'admin' : 'member');
+//         }
+//       }
+//     } catch (error) {
+//       console.error('Error fetching categories and role:', error);
+//     } finally {
+//       setLoadingRole(false);
+//     }
+//   }, [teamId, user.uid]);
+
+//   const openAddModal = () => {
+//     setSelectedCategory(null);
+//     setCategoryName('');
+//     setImageUri('');
+//     setModalVisible(true);
+//   };
+
+//   const buttons = [
+//     {
+//       iconName: 'account-cog',
+//       label: 'Account',
+//       onPress: () => navigation.navigate('UserSettingsScreen'),
+//     },
+//     {
+//       iconName: 'home',
+//       label: 'Home',
+//       onPress: () => navigation.navigate('Home'),
+//     },
+//     {
+//       iconName: 'plus-thick',
+//       label: 'Add Shelf',
+//       onPress: openAddModal,
+//     },
+//   ];
+
+//   const buttons2 = [
+//     {
+//       iconName: 'account-cog',
+//       label: 'Account',
+//       onPress: () => navigation.navigate('UserSettingsScreen'),
+//     },
+//     {
+//       iconName: 'home',
+//       label: 'Home',
+//       onPress: () => navigation.navigate('Home'),
+//     },
+//   ];
+
+//   const selectImage = async (source) => {
+//     let result;
+//     if (source === 'camera') {
+//       const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+//       if (cameraPermission.granted === false) {
+//         alert("You've refused to allow this app to access your camera!");
+//         return;
+//       }
+//       result = await ImagePicker.launchCameraAsync({
+//         mediaTypes: ImagePicker.MediaTypeOptions.Images,
+//         allowsEditing: true,
+//         aspect: [4, 3],
+//         quality: 1,
+//       });
+//     } else {
+//       const libraryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+//       if (libraryPermission.granted === false) {
+//         alert("You've refused to allow this app to access your photos!");
+//         return;
+//       }
+//       result = await ImagePicker.launchImageLibraryAsync({
+//         mediaTypes: ImagePicker.MediaTypeOptions.Images,
+//         allowsEditing: true,
+//         aspect: [4, 3],
+//         quality: 1,
+//       });
+//     }
+
+//     if (!result.canceled && result.assets && result.assets.length > 0) {
+//       setImageUri(result.assets[0].uri);
+//       setImagePickerModalVisible(false);
+//     }
+//   };
+
+//   const uploadImage = async (uri) => {
+//     if (!uri) return null;
+//     try {
+//       const response = await fetch(uri);
+//       const blob = await response.blob();
+//       const filename = uri.substring(uri.lastIndexOf('/') + 1);
+//       const storageRef = ref(storage, `images/${filename}`);
+//       const uploadTask = uploadBytesResumable(storageRef, blob);
+
+//       return new Promise((resolve, reject) => {
+//         uploadTask.on(
+//           'state_changed',
+//           null,
+//           (error) => {
+//             console.error('Upload failed', error);
+//             reject(error);
+//           },
+//           async () => {
+//             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+//             resolve(downloadURL);
+//           }
+//         );
+//       });
+//     } catch (error) {
+//       console.error('Error uploading image:', error);
+//       throw error;
+//     }
+//   };
+
+//   const addCategory = async () => {
+//     if (!categoryName.trim() || !imageUri) {
+//       Alert.alert('Missing information', 'Please provide a name and select an image.');
+//       return;
+//     }
+//     setLoading(true);
+//     try {
+//       const imageUrl = await uploadImage(imageUri);
+//       await addDoc(collection(db, 'categories'), {
+//         name: categoryName,
+//         img: imageUrl,
+//         teamId: teamId,
+//       });
+//       Alert.alert('Shelf added!', 'Your Shelf has been added successfully.');
+//       setCategoryName('');
+//       setImageUri('');
+//       setModalVisible(false);
+//       fetchCategoriesAndRole();
+//     } catch (error) {
+//       console.error('Error adding Shelf:', error);
+//       Alert.alert('Error', `There was an error adding your Shelf: ${error.message}`);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const editCategory = async () => {
+//     if (!selectedCategory || !categoryName.trim()) {
+//       Alert.alert('Missing information', 'Please provide a name.');
+//       return;
+//     }
+
+//     setLoading(true);
+//     try {
+//       let imageUrl = selectedCategory.img;
+//       if (imageUri && imageUri !== selectedCategory.img) {
+//         imageUrl = await uploadImage(imageUri);
+//         if (selectedCategory.img) {
+//           const oldImageRef = ref(storage, selectedCategory.img);
+//           await deleteObject(oldImageRef);
+//         }
+//       }
+
+//       await updateDoc(doc(db, 'categories', selectedCategory.id), {
+//         name: categoryName,
+//         img: imageUrl,
+//       });
+
+//       Alert.alert('Shelf updated!', 'Your Shelf has been updated successfully.');
+//       setSelectedCategory(null);
+//       setCategoryName('');
+//       setImageUri('');
+//       setModalVisible(false);
+//       fetchCategoriesAndRole();
+//     } catch (error) {
+//       console.error('Error updating Shelf:', error);
+//       Alert.alert('Error', `There was an error updating your Shelf: ${error.message}`);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const deleteCategory = async (categoryId) => {
+//     try {
+//       const categoryRef = doc(db, 'categories', categoryId);
+//       const categoryDoc = await getDoc(categoryRef);
+//       if (categoryDoc.exists()) {
+//         const categoryData = categoryDoc.data();
+
+//         const itemsQuerySnapshot = await getDocs(collection(db, 'categories', categoryId, 'items'));
+//         for (const itemDoc of itemsQuerySnapshot.docs) {
+//           const itemData = itemDoc.data();
+//           if (itemData.img) {
+//             const imgRef = ref(storage, itemData.img);
+//             await deleteObject(imgRef);
+//           }
+//           await deleteDoc(doc(db, 'categories', categoryId, 'items', itemDoc.id));
+//         }
+        
+//         if (categoryData.img) {
+//           const categoryImgRef = ref(storage, categoryData.img);
+//           await deleteObject(categoryImgRef);
+//         }
+        
+//         await deleteDoc(categoryRef);
+        
+//         Alert.alert('Shelf removed!', 'Your Shelf and its items have been removed successfully.');
+//         fetchCategoriesAndRole();
+//         } else {
+//         Alert.alert('Error', 'Shelf not found.');
+//         }
+//         } catch (error) {
+//         console.error('Error removing Shelf:', error);
+//         Alert.alert('Error', `There was an error removing your Shelf: ${error.message}`);
+//         }
+//         };
+        
+//         const openMenu = (category) => {
+//         setMenuCategory(category);
+//         setMenuVisible(true);
+//         };
+        
+//         const closeMenu = () => {
+//         setMenuCategory(null);
+//         setMenuVisible(false);
+//         };
+        
+//         const openEditModal = (category) => {
+//         setSelectedCategory(category);
+//         setCategoryName(category.name);
+//         setImageUri(category.img);
+//         setModalVisible(true);
+//         closeMenu();
+//         };
+        
+//         const handleItemSelect = (selectedCategory) => {
+//         const index = categories.findIndex(category => category.id === selectedCategory.id);
+//         const adjustedIndex = Math.floor(index / numColumns);
+        
+//         if (flatListRef.current && adjustedIndex >= 0) {
+//           flatListRef.current.scrollToIndex({ index: adjustedIndex, animated: true });
+//         } else {
+//           console.warn('Index out of bounds:', adjustedIndex);
+//         }
+//         };
+        
+//         const handleScroll = () => {
+//         searchBarRef.current?.clearInput();
+//         Keyboard.dismiss();
+//         closeMenu();
+//         };
+        
+//         const renderCategoryItem = ({ item }) => {
+//         const screenWidth = Dimensions.get('window').width;
+//         const itemWidth = (screenWidth - scaleSize(30)) / numColumns;
+        
+//         return (
+//           <View style={[styles.categoryContainer, { width: itemWidth, height: itemWidth }]}>
+//             <TouchableOpacity 
+//               onPress={() => navigation.navigate('CategoryDetailScreen', { categoryId: item.id, categoryName: item.name, teamName })} 
+//               style={styles.categoryContent}
+//             >
+//               <View style={styles.imageShadowContainer}>
+//                 <Image source={{ uri: item.img }} style={styles.categoryImage} />
+//               </View>
+//               <Text style={styles.categoryName}>{item.name}</Text>
+//             </TouchableOpacity>
+//             {userRole === 'admin' && (
+//               <TouchableOpacity onPress={() => openMenu(item)} style={styles.menuButton}>
+//                 <MaterialCommunityIcons name="cog" size={scaleSize(29)} color="white" />
+//               </TouchableOpacity>
+//             )}
+//             {menuVisible && menuCategory && menuCategory.id === item.id && (
+//               <View style={styles.menuContainer}>
+//                 <TouchableOpacity onPress={() => setSelectedCategoryForReport(item.id)}>
+//                   <Text style={styles.menuItem}>Inventory</Text>
+//                 </TouchableOpacity>
+//                 <TouchableOpacity onPress={() => openEditModal(item)}>
+//                   <Text style={styles.menuItem}>Edit</Text>
+//                 </TouchableOpacity>
+//                 <TouchableOpacity onPress={() => deleteCategory(item.id)}>
+//                   <Text style={styles.menuItem}>Remove</Text>
+//                 </TouchableOpacity>
+//               </View>
+//             )}
+//           </View>
+//         );
+//         };
+        
+//         const headerTranslateY = scrollY.interpolate({
+//         inputRange: [0, HEADER_HEIGHT],
+//         outputRange: [0, -HEADER_HEIGHT],
+//         extrapolate: 'clamp',
+//         });
+        
+//         return (
+//         <TouchableWithoutFeedback onPress={closeMenu}>
+//           {loadingRole ? (
+//             <View style={styles.loadingContainer}>
+//               <ActivityIndicator size="large" color="white" />
+//             </View>
+//           ) : (
+//             <SafeAreaView style={styles.container}>
+//               <Animated.View style={[styles.header, { transform: [{ translateY: headerTranslateY }] }]}>
+//                 <Text style={styles.teamName}>{teamName}</Text>
+//                 {categories.length > 0 && <CategorySearchBar ref={searchBarRef} items={categories} onSelect={handleItemSelect} />}
+//               </Animated.View>
+//               <Spacer height={scaleSize(80)} />
+//               {categories.length === 0 ? (
+//                 <View style={styles.emptyContainer}>
+//                    <Image source={require('../../assets/box2.png')} style={styles.emptyImage} />
+//                   <Text style={styles.noCategories}>
+//                     This team's inventory has no Shelves yet.{' '}
+//                     {userRole !== 'admin' && (
+//                       <Text style={styles.noCategories}>New Shelves Will Appear Here When Added!</Text>
+//                     )}
+//                     {userRole === 'admin' && (
+//                       <Text style={styles.noCategories}>Add some shelves to start organizing your items!</Text>
+//                     )}
+//                   </Text>
+                 
+//                 </View>
+//               ) : (
+//                 <AnimatedFlatList
+//                   ref={flatListRef}
+//                   data={categories}
+//                   keyExtractor={(item) => item.id}
+//                   renderItem={renderCategoryItem}
+//                   numColumns={numColumns}
+//                   initialNumToRender={categories.length}
+//                   maxToRenderPerBatch={categories.length}
+//                   contentContainerStyle={styles.list}
+//                   onScroll={Animated.event(
+//                     [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+//                     { useNativeDriver: true, listener: handleScroll }
+//                   )}
+//                   onScrollToIndexFailed={(info) => {
+//                     console.warn('scrollToIndex failed', info);
+//                     const wait = new Promise(resolve => setTimeout(resolve, 500));
+//                     wait.then(() => {
+//                       flatListRef.current?.scrollToIndex({
+//                         index: info.index,
+//                         animated: true,
+//                       });
+//                     });
+//                   }}
+//                 />
+//               )}
+//               {userRole === 'admin' && <ButtonTools buttons={buttons} />}
+//               {userRole !== 'admin' && <ButtonTools buttons={buttons2} />}
+//               <Modal
+                        
+
+//                 placeholderTextColor={"gray"}
+//                 animationType="slide"
+//                 transparent={true}
+//                 visible={modalVisible}
+//                 onRequestClose={() => setModalVisible(false)}
+//               >
+//                 <View style={styles.modalContainer}>
+                  
+//                   <View style={styles.modalView}>
+                    
+//                     <TextInput
+//                       placeholder="  Shelf Name..."
+//                       value={categoryName}
+//                       onChangeText={setCategoryName}
+//                       style={styles.input}
+//                       placeholderTextColor="gray"
+//                     />
+//                     <TouchableOpacity onPress={() => setImagePickerModalVisible(true)}>
+//                       <Image
+//                         source={imageUri ? { uri: imageUri } : require('../../assets/addImg.png')}
+//                         style={[styles.image, { borderRadius: scaleSize(20) }]} 
+//                       />
+//                     </TouchableOpacity>
+//                     <View style={styles.buttonContainer}>
+//                       {loading ? (
+//                         <ActivityIndicator size="large" color="white" style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} />
+//                       ) : (
+//                         <>
+//                           <TouchableOpacity style={[styles.button, styles.addCategoryButton]} onPress={selectedCategory ? editCategory : addCategory}>
+//                             <Text style={styles.buttonText}>{selectedCategory ? "Update" : "   Add    "}</Text>
+//                           </TouchableOpacity>
+//                           <View style={styles.buttonSpacing} />
+//                           <TouchableOpacity style={[styles.button, styles.addCategoryButton]} onPress={() => setModalVisible(false)}>
+//                             <Text style={styles.buttonText}>Cancel</Text>
+//                           </TouchableOpacity>
+//                         </>
+//                       )}
+//                     </View>
+//                   </View>
+//                 </View>
+//               </Modal>
+//               <Modal
+//                 transparent={true}
+//                 visible={imagePickerModalVisible}
+//                 animationType="slide"
+//                 onRequestClose={() => setImagePickerModalVisible(false)}
+//               >
+//                 <View style={styles.modalOverlay}>
+//                   <View style={styles.imagePickerModal}>
+//                     <Text style={styles.imagePickerTitle}>Select Image</Text>
+//                     <Text style={styles.imagePickerSubtitle}>Choose the source of the image</Text>
+//                     <View style={styles.imagePickerOptions}>
+//                       <TouchableOpacity onPress={() => selectImage('camera')}>
+//                         <Text style={styles.imagePickerOptionText}>Camera</Text>
+//                       </TouchableOpacity>
+//                       <TouchableOpacity onPress={() => selectImage('library')}>
+//                         <Text style={styles.imagePickerOptionText}>Library</Text>
+//                       </TouchableOpacity>
+//                       <TouchableOpacity onPress={() => setImagePickerModalVisible(false)}>
+//                         <Text style={styles.imagePickerOptionText}>Cancel</Text>
+//                       </TouchableOpacity>
+//                     </View>
+//                   </View>
+//                 </View>
+//               </Modal>
+//               {selectedCategoryForReport && (
+//                 <Modal
+//                   animationType="slide"
+//                   transparent={false}
+//                   visible={true}
+//                   onRequestClose={() => setSelectedCategoryForReport(null)}
+//                 >
+//                   <View style={styles.reportContainer}>
+//                     <GetReport categoryId={selectedCategoryForReport} />
+//                     <TouchableOpacity style={styles.Xbutton} onPress={() => setSelectedCategoryForReport(null)}>
+//                       <Text style={styles.XbuttonText}>Close</Text>
+//                     </TouchableOpacity>
+//                   </View>
+//                 </Modal>
+//               )}
+//             </SafeAreaView>
+//           )}
+//         </TouchableWithoutFeedback>
+//         );
+//         };
+        
+//         const Spacer = ({ height }) => {
+//           return <View style={{ height }} />;
+//         };
+        
+//         const styles = StyleSheet.create({
+//           container: {
+//             flex: 1,
+//             backgroundColor: 'black', 
+//             justifyContent: 'center',
+//           },
+//           loadingContainer: {
+//             flex: 1,
+//             justifyContent: 'center',
+//            backgroundColor: 'black',
+//             alignItems: 'center',
+//           },
+//           reportContainer: {
+//             flex: 1,
+//             justifyContent: 'center',
+//             alignItems: 'center',
+//             backgroundColor: '#9cacbc', backgroundColor: 'black',
+//           },
+//           header: {
+//             position: 'absolute',
+//             top: 0,
+//             left: 0,
+//             right: 0,
+//             zIndex: 2,
+//             backgroundColor: '#9cacbc', backgroundColor: 'black',
+//             paddingBottom: scaleSize(51),
+//             alignItems: 'center',
+//             height: HEADER_HEIGHT,
+//             paddingTop: scaleSize(40),
+//           },
+//           teamName: {
+//             fontSize: scaleSize(35),
+//             zIndex: 1,
+//             height: scaleSize(43),
+//             fontWeight: 'bold',
+//             color: '#f0f0f0',
+//           },
+//           floatingAddButton: {
+//             position: 'absolute',
+//             bottom: scaleSize(50),
+//             right: scaleSize(27),
+//             backgroundColor: '#9cacbc',
+//             borderRadius: scaleSize(90),
+//             padding: scaleSize(35),
+//             elevation: 5,
+//             height: scaleSize(90),
+//           },
+//           floatingAddButtonText: {
+//             color: 'white',
+//             fontSize: scaleSize(36),
+//             fontWeight: 'bold',
+//             marginBottom: scaleSize(2),
+//           },
+//           input: {
+//             height: scaleSize(40),
+//             borderColor: '#ccc',
+//             borderWidth: scaleSize(1.3),
+//             borderRadius: scaleSize(20),
+//             marginBottom: scaleSize(12),
+//             paddingHorizontal: scaleSize(8),
+//             width: scaleSize(200),
+//             color: 'white',
+//           },
+//           image: {
+//             width: scaleSize(123),
+//             height: scaleSize(115),
+//             marginBottom: scaleSize(10),
+//             borderRadius: scaleSize(10),
+//           },
+//           categoryContainer: {
+//             marginBottom: scaleSize(19),
+//             alignItems: 'center',
+//             justifyContent: 'center',
+//             borderRadius: scaleSize(10),
+//             marginHorizontal: scaleSize(1),
+//             position: 'relative',
+//           },
+//           menuItem: {
+//             paddingVertical: scaleSize(10),
+//             paddingHorizontal: scaleSize(15),
+//             backgroundColor: 'rgba(172, 188, 198, 1.7)',
+//             fontSize: scaleSize(18),
+//             color: 'white',
+//           },
+//           categoryContent: {
+//             width: '105%',
+//             height: '105%',
+//             alignItems: 'center',
+//             justifyContent: 'center',
+//           },
+//           imageShadowContainer: {
+//             width: '90%',
+//             height: '85%',
+//             borderRadius: scaleSize(20),
+//             shadowColor: 'white',
+//             shadowOffset: { width: 4, height: 4 },
+//             shadowOpacity: 0.55,
+//             shadowRadius: 4,
+//             elevation: 8,
+//             overflow: 'hidden',
+//           },
+//           categoryImage: {
+//             width: '100%',
+//             height: '100%',
+//             resizeMode: 'cover',
+//           },
+//           categoryName: {
+//             textAlign: 'center',
+//             paddingTop: scaleSize(1),
+//             fontSize: scaleSize(18),
+//             fontWeight: 'bold',
+//             color: '#f0f0f0',elevation: 8,
+//           },
+//           list: {
+//             justifyContent: 'space-between',
+//             paddingHorizontal: scaleSize(9),
+//             paddingTop: HEADER_HEIGHT,
+//           },
+//           modalContainer: {
+//             flex: 1,
+//             justifyContent: 'center',
+//             alignItems: 'center',
+//             backgroundColor: 'rgba(0, 0, 0, 0.9)',
+//           },
+//           modalView: {
+//             width: '80%',
+//             borderRadius: scaleSize(30),
+//             padding: scaleSize(20),
+//             alignItems: 'center',
+//             backgroundColor: 'black',
+//             shadowColor: 'white',
+//             shadowOffset: { width: 0, height: 2 },
+//             shadowOpacity: 0.25,
+//             shadowRadius: 4,
+//             elevation: 5,
+//           },
+//           buttonContainer: {
+//             flexDirection: 'row',
+//             justifyContent: 'space-between',
+//             marginTop: scaleSize(20),
+//             width: '85%',
+//           },
+//           buttonSpacing: {
+//             width: scaleSize(10),
+//           },
+//           button: {
+//             elevation: 5,
+//             paddingVertical: scaleSize(10),
+//             paddingHorizontal: scaleSize(20),
+//             backgroundColor: 'rgba(172, 188, 198, 1.7)',
+//             borderRadius: scaleSize(90),
+//             alignItems: 'center',
+//             justifyContent: 'center',
+//             marginBottom: scaleSize(20),
+//           },
+//           Xbutton: {
+//             elevation: 5,
+//             paddingVertical: scaleSize(10),
+//             paddingHorizontal: scaleSize(13),
+//             backgroundColor: 'rgba(172, 188, 198, 1.7)',backgroundColor: 'rgba(172, 188, 198, 0.13)',
+//             borderRadius: scaleSize(110),
+//             alignItems: 'center',
+//             justifyContent: 'center',
+//             marginBottom: scaleSize(10),
+//           },
+//           addCategoryButton: {
+//             elevation: 5,
+//             paddingVertical: scaleSize(10),
+//             paddingHorizontal: scaleSize(20),
+//             backgroundColor: 'rgba(172, 188, 198, 1.7)',backgroundColor: 'rgba(172, 188, 198, 0.13)',
+//             borderRadius: scaleSize(90),
+//             alignItems: 'center',
+//             justifyContent: 'center',
+//             marginBottom: scaleSize(20),
+//           },
+//           buttonRow: {
+//             flexDirection: 'row',
+//             justifyContent: 'space-between',
+//             padding: scaleSize(10),
+//           },
+//           cancelButton: {
+//             elevation: 5,
+//             paddingVertical: scaleSize(1),
+//             paddingHorizontal: scaleSize(20),
+//             borderRadius: scaleSize(90),
+//             alignItems: 'center',
+//             justifyContent: 'center',
+//             marginBottom: scaleSize(20),
+//           },
+//           buttonText: {
+//             color: 'white',
+//             fontSize: scaleSize(16),
+//             fontWeight: 'bold',
+//           },
+//           XbuttonText: {
+//             color: 'white',
+//             fontSize: scaleSize(25),
+//             fontWeight: 'bold',
+//           },
+//           successMessage: {
+//             position: 'absolute',
+//             top: scaleSize(100),
+//             left: scaleSize(110),
+//             transform: [{ translateX: -50 }],
+//             backgroundColor: 'green',
+//             padding: scaleSize(20),
+//             borderRadius: scaleSize(10),
+//             zIndex: 1,
+//           },
+//           successText: {
+//             color: 'white',
+//             fontWeight: 'bold',
+//             fontSize: scaleSize(18),
+//           },
+//           menuButton: {
+//             position: 'absolute',
+//             top: scaleSize(12),
+//             right: scaleSize(16),
+//           },
+//           optionsContainer: {
+//             backgroundColor: 'rgba(172, 188, 198, 1.7)',
+//             padding: scaleSize(5),
+//             borderRadius: scaleSize(10),
+//           },
+//           optionText: {
+//             color: 'white',
+//             fontSize: scaleSize(18),
+//           },
+//           noCategories: {
+//             fontSize: scaleSize(20),
+//             zIndex: 1,
+//             height: scaleSize(323),
+//             fontWeight: 'bold',
+//             marginLeft: scaleSize(19),
+//             color: 'white',
+//             marginBottom: scaleSize(1),
+//           },
+//           emptyContainer: {
+//             flex: 1,
+//             justifyContent: 'center',
+//             alignItems: 'center',
+//             paddingHorizontal: scaleSize(30),
+//           },
+//           emptyImage: {
+//             width: scaleSize(230),
+//             height: scaleSize(240),
+//           },
+//           manageTeamButton: {
+//             elevation: 5,
+//             paddingVertical: scaleSize(10),
+//             paddingHorizontal: scaleSize(10),
+//             backgroundColor: 'rgba(172, 188, 198, 1.7)',
+//             borderRadius: scaleSize(90),
+//             alignItems: 'center',
+//             justifyContent: 'center',
+//             marginBottom: scaleSize(20),
+//             width: '45%',
+//           },
+//           manageTeamButtonText: {
+//             color: 'white',
+//             fontSize: scaleSize(19),
+//             fontWeight: 'bold', 
+//           },
+//           addButton: {
+//             elevation: 5,
+//             paddingVertical: scaleSize(10),
+//             paddingHorizontal: scaleSize(10),
+//             backgroundColor: 'rgba(172, 188, 198, 1.7)',
+//             borderRadius: scaleSize(90),
+//             alignItems: 'center',
+//             justifyContent: 'center',
+//             marginBottom: scaleSize(20),
+//             width: '45%',
+//           },
+//           addButtonText: {
+//             color: 'white',
+//             fontSize: scaleSize(20),
+//             fontWeight: 'bold',
+//           },
+//           menuContainer: {
+//             position: 'absolute',
+//             top: scaleSize(40),
+//             right: scaleSize(30),
+//             backgroundColor: 'rgba(172, 188, 198, 1.7)', backgroundColor: 'black',
+//             borderRadius: scaleSize(10),
+//             elevation: 10,
+//             padding: scaleSize(8),
+//             zIndex: 10,
+//           },
+//           reportContainer: {
+//             flex: 1,
+//             justifyContent: 'center',
+//             alignItems: 'center',
+//             backgroundColor: '#9cacbc',   backgroundColor: 'black',
+//           },
+//           menuItem: {
+//             paddingVertical: scaleSize(6),
+//             paddingHorizontal: scaleSize(19),
+//             backgroundColor: 'rgba(172, 188, 198, 1.7)', backgroundColor: 'black',
+//             fontSize: scaleSize(18),
+//             fontWeight: 'bold',
+//             color: 'white',
+//           },
+//           modalOverlay: {
+//             flex: 1,
+//             backgroundColor: 'rgba(0, 0, 0, 0.5)',
+//             justifyContent: 'center',
+//             alignItems: 'center',
+//           },
+//           imagePickerModal: {
+//             width: '80%',
+//             backgroundColor: 'rgba(172, 188, 198, 1.1)',backgroundColor: 'black',
+//             borderRadius: scaleSize(10),
+//             padding: scaleSize(22),
+//             alignItems: 'center',
+//           },
+//           imagePickerTitle: {
+//             fontSize: scaleSize(23),
+//             fontWeight: 'bold',
+//             color: 'white',
+//             marginBottom: scaleSize(10),
+//           },
+//           imagePickerSubtitle: {
+//             fontSize: scaleSize(16),
+//             color: 'white',
+//             marginBottom: scaleSize(20),
+//           },
+//           imagePickerOptions: {
+//             width: '100%',
+//           },
+//           imagePickerOptionText: {
+//             fontSize: scaleSize(21),
+//             color: 'white',
+//             padding: scaleSize(8),
+//             textAlign: 'center',
+//           },
+//         });
+        
+//         export default memo(CategoryListScreen);
+        
+// CategoryListScreen.js
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { 
   View, Text, FlatList, TouchableOpacity, Image, StyleSheet, Dimensions, Modal, 
@@ -2802,6 +3661,7 @@ import CategorySearchBar from '../components/CategorySearchBar';
 import GetReport from '../components/GetReport';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ButtonTools from '../components/ButtonTools';
+import { useUser } from '../components/UserContext'; // Import useUser
 
 const HEADER_HEIGHT = 92;
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
@@ -2828,7 +3688,7 @@ const CategoryListScreen = ({ navigation }) => {
   const route = useRoute();
   const { teamId, teamName } = route.params;
   const numColumns = 2;
-  const user = FIREBASE_AUTH.currentUser;
+  const { user } = useUser(); // Use useUser hook to get user
   const scrollY = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef(null);
   const searchBarRef = useRef(null);
@@ -2885,6 +3745,13 @@ const CategoryListScreen = ({ navigation }) => {
     setModalVisible(true);
   };
 
+
+
+  useEffect(() => {
+    console.log("User in CategoryListScreen:", user); // Debugging line
+  }, [user]);
+
+
   const buttons = [
     {
       iconName: 'account-cog',
@@ -2894,7 +3761,10 @@ const CategoryListScreen = ({ navigation }) => {
     {
       iconName: 'home',
       label: 'Home',
-      onPress: () => navigation.navigate('Home'),
+      onPress: () => {
+        console.log("Navigating to Home from CategoryListScreen with userName:", user?.username || user?.username); // Debugging line
+        navigation.navigate('Home', { userName: user?.username || user?.username });
+      },
     },
     {
       iconName: 'plus-thick',
@@ -2912,8 +3782,10 @@ const CategoryListScreen = ({ navigation }) => {
     {
       iconName: 'home',
       label: 'Home',
-      onPress: () => navigation.navigate('Home'),
-    },
+      onPress: () => {
+        console.log("Navigating to Home from CategoryListScreen with userName:", user?.username || user?.username); // Debugging line
+        navigation.navigate('Home', { userName: user?.username || user?.username });
+      },    },
   ];
 
   const selectImage = async (source) => {
@@ -3210,8 +4082,6 @@ const CategoryListScreen = ({ navigation }) => {
               {userRole === 'admin' && <ButtonTools buttons={buttons} />}
               {userRole !== 'admin' && <ButtonTools buttons={buttons2} />}
               <Modal
-                        
-
                 placeholderTextColor={"gray"}
                 animationType="slide"
                 transparent={true}
@@ -3219,9 +4089,7 @@ const CategoryListScreen = ({ navigation }) => {
                 onRequestClose={() => setModalVisible(false)}
               >
                 <View style={styles.modalContainer}>
-                  
                   <View style={styles.modalView}>
-                    
                     <TextInput
                       placeholder="  Shelf Name..."
                       value={categoryName}
@@ -3296,349 +4164,348 @@ const CategoryListScreen = ({ navigation }) => {
           )}
         </TouchableWithoutFeedback>
         );
-        };
-        
-        const Spacer = ({ height }) => {
-          return <View style={{ height }} />;
-        };
-        
-        const styles = StyleSheet.create({
-          container: {
-            flex: 1,
-            backgroundColor: 'black', 
-            justifyContent: 'center',
-          },
-          loadingContainer: {
-            flex: 1,
-            justifyContent: 'center',
-           backgroundColor: 'black',
-            alignItems: 'center',
-          },
-          reportContainer: {
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: '#9cacbc', backgroundColor: 'black',
-          },
-          header: {
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 2,
-            backgroundColor: '#9cacbc', backgroundColor: 'black',
-            paddingBottom: scaleSize(51),
-            alignItems: 'center',
-            height: HEADER_HEIGHT,
-            paddingTop: scaleSize(40),
-          },
-          teamName: {
-            fontSize: scaleSize(35),
-            zIndex: 1,
-            height: scaleSize(43),
-            fontWeight: 'bold',
-            color: '#f0f0f0',
-          },
-          floatingAddButton: {
-            position: 'absolute',
-            bottom: scaleSize(50),
-            right: scaleSize(27),
-            backgroundColor: '#9cacbc',
-            borderRadius: scaleSize(90),
-            padding: scaleSize(35),
-            elevation: 5,
-            height: scaleSize(90),
-          },
-          floatingAddButtonText: {
-            color: 'white',
-            fontSize: scaleSize(36),
-            fontWeight: 'bold',
-            marginBottom: scaleSize(2),
-          },
-          input: {
-            height: scaleSize(40),
-            borderColor: '#ccc',
-            borderWidth: scaleSize(1.3),
-            borderRadius: scaleSize(20),
-            marginBottom: scaleSize(12),
-            paddingHorizontal: scaleSize(8),
-            width: scaleSize(200),
-            color: 'white',
-          },
-          image: {
-            width: scaleSize(123),
-            height: scaleSize(115),
-            marginBottom: scaleSize(10),
-            borderRadius: scaleSize(10),
-          },
-          categoryContainer: {
-            marginBottom: scaleSize(19),
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: scaleSize(10),
-            marginHorizontal: scaleSize(1),
-            position: 'relative',
-          },
-          menuItem: {
-            paddingVertical: scaleSize(10),
-            paddingHorizontal: scaleSize(15),
-            backgroundColor: 'rgba(172, 188, 198, 1.7)',
-            fontSize: scaleSize(18),
-            color: 'white',
-          },
-          categoryContent: {
-            width: '105%',
-            height: '105%',
-            alignItems: 'center',
-            justifyContent: 'center',
-          },
-          imageShadowContainer: {
-            width: '90%',
-            height: '85%',
-            borderRadius: scaleSize(20),
-            shadowColor: 'white',
-            shadowOffset: { width: 4, height: 4 },
-            shadowOpacity: 0.55,
-            shadowRadius: 4,
-            elevation: 8,
-            overflow: 'hidden',
-          },
-          categoryImage: {
-            width: '100%',
-            height: '100%',
-            resizeMode: 'cover',
-          },
-          categoryName: {
-            textAlign: 'center',
-            paddingTop: scaleSize(1),
-            fontSize: scaleSize(18),
-            fontWeight: 'bold',
-            color: '#f0f0f0',elevation: 8,
-          },
-          list: {
-            justifyContent: 'space-between',
-            paddingHorizontal: scaleSize(9),
-            paddingTop: HEADER_HEIGHT,
-          },
-          modalContainer: {
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.9)',
-          },
-          modalView: {
-            width: '80%',
-            borderRadius: scaleSize(30),
-            padding: scaleSize(20),
-            alignItems: 'center',
-            backgroundColor: 'black',
-            shadowColor: 'white',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.25,
-            shadowRadius: 4,
-            elevation: 5,
-          },
-          buttonContainer: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginTop: scaleSize(20),
-            width: '85%',
-          },
-          buttonSpacing: {
-            width: scaleSize(10),
-          },
-          button: {
-            elevation: 5,
-            paddingVertical: scaleSize(10),
-            paddingHorizontal: scaleSize(20),
-            backgroundColor: 'rgba(172, 188, 198, 1.7)',
-            borderRadius: scaleSize(90),
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: scaleSize(20),
-          },
-          Xbutton: {
-            elevation: 5,
-            paddingVertical: scaleSize(10),
-            paddingHorizontal: scaleSize(13),
-            backgroundColor: 'rgba(172, 188, 198, 1.7)',backgroundColor: 'rgba(172, 188, 198, 0.13)',
-            borderRadius: scaleSize(110),
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: scaleSize(10),
-          },
-          addCategoryButton: {
-            elevation: 5,
-            paddingVertical: scaleSize(10),
-            paddingHorizontal: scaleSize(20),
-            backgroundColor: 'rgba(172, 188, 198, 1.7)',backgroundColor: 'rgba(172, 188, 198, 0.13)',
-            borderRadius: scaleSize(90),
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: scaleSize(20),
-          },
-          buttonRow: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            padding: scaleSize(10),
-          },
-          cancelButton: {
-            elevation: 5,
-            paddingVertical: scaleSize(1),
-            paddingHorizontal: scaleSize(20),
-            borderRadius: scaleSize(90),
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: scaleSize(20),
-          },
-          buttonText: {
-            color: 'white',
-            fontSize: scaleSize(16),
-            fontWeight: 'bold',
-          },
-          XbuttonText: {
-            color: 'white',
-            fontSize: scaleSize(25),
-            fontWeight: 'bold',
-          },
-          successMessage: {
-            position: 'absolute',
-            top: scaleSize(100),
-            left: scaleSize(110),
-            transform: [{ translateX: -50 }],
-            backgroundColor: 'green',
-            padding: scaleSize(20),
-            borderRadius: scaleSize(10),
-            zIndex: 1,
-          },
-          successText: {
-            color: 'white',
-            fontWeight: 'bold',
-            fontSize: scaleSize(18),
-          },
-          menuButton: {
-            position: 'absolute',
-            top: scaleSize(12),
-            right: scaleSize(16),
-          },
-          optionsContainer: {
-            backgroundColor: 'rgba(172, 188, 198, 1.7)',
-            padding: scaleSize(5),
-            borderRadius: scaleSize(10),
-          },
-          optionText: {
-            color: 'white',
-            fontSize: scaleSize(18),
-          },
-          noCategories: {
-            fontSize: scaleSize(20),
-            zIndex: 1,
-            height: scaleSize(323),
-            fontWeight: 'bold',
-            marginLeft: scaleSize(19),
-            color: 'white',
-            marginBottom: scaleSize(1),
-          },
-          emptyContainer: {
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            paddingHorizontal: scaleSize(30),
-          },
-          emptyImage: {
-            width: scaleSize(230),
-            height: scaleSize(240),
-          },
-          manageTeamButton: {
-            elevation: 5,
-            paddingVertical: scaleSize(10),
-            paddingHorizontal: scaleSize(10),
-            backgroundColor: 'rgba(172, 188, 198, 1.7)',
-            borderRadius: scaleSize(90),
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: scaleSize(20),
-            width: '45%',
-          },
-          manageTeamButtonText: {
-            color: 'white',
-            fontSize: scaleSize(19),
-            fontWeight: 'bold', 
-          },
-          addButton: {
-            elevation: 5,
-            paddingVertical: scaleSize(10),
-            paddingHorizontal: scaleSize(10),
-            backgroundColor: 'rgba(172, 188, 198, 1.7)',
-            borderRadius: scaleSize(90),
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: scaleSize(20),
-            width: '45%',
-          },
-          addButtonText: {
-            color: 'white',
-            fontSize: scaleSize(20),
-            fontWeight: 'bold',
-          },
-          menuContainer: {
-            position: 'absolute',
-            top: scaleSize(40),
-            right: scaleSize(30),
-            backgroundColor: 'rgba(172, 188, 198, 1.7)', backgroundColor: 'black',
-            borderRadius: scaleSize(10),
-            elevation: 10,
-            padding: scaleSize(8),
-            zIndex: 10,
-          },
-          reportContainer: {
-            flex: 1,
-            justifyContent: 'center',
-            alignItems: 'center',
-            backgroundColor: '#9cacbc',   backgroundColor: 'black',
-          },
-          menuItem: {
-            paddingVertical: scaleSize(6),
-            paddingHorizontal: scaleSize(19),
-            backgroundColor: 'rgba(172, 188, 198, 1.7)', backgroundColor: 'black',
-            fontSize: scaleSize(18),
-            fontWeight: 'bold',
-            color: 'white',
-          },
-          modalOverlay: {
-            flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            justifyContent: 'center',
-            alignItems: 'center',
-          },
-          imagePickerModal: {
-            width: '80%',
-            backgroundColor: 'rgba(172, 188, 198, 1.1)',backgroundColor: 'black',
-            borderRadius: scaleSize(10),
-            padding: scaleSize(22),
-            alignItems: 'center',
-          },
-          imagePickerTitle: {
-            fontSize: scaleSize(23),
-            fontWeight: 'bold',
-            color: 'white',
-            marginBottom: scaleSize(10),
-          },
-          imagePickerSubtitle: {
-            fontSize: scaleSize(16),
-            color: 'white',
-            marginBottom: scaleSize(20),
-          },
-          imagePickerOptions: {
-            width: '100%',
-          },
-          imagePickerOptionText: {
-            fontSize: scaleSize(21),
-            color: 'white',
-            padding: scaleSize(8),
-            textAlign: 'center',
-          },
-        });
-        
-        export default memo(CategoryListScreen);
-        
+};
+
+const Spacer = ({ height }) => {
+  return <View style={{ height }} />;
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'black', 
+    justifyContent: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+   backgroundColor: 'black',
+    alignItems: 'center',
+  },
+  reportContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#9cacbc', backgroundColor: 'black',
+  },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
+    backgroundColor: '#9cacbc', backgroundColor: 'black',
+    paddingBottom: scaleSize(51),
+    alignItems: 'center',
+    height: HEADER_HEIGHT,
+    paddingTop: scaleSize(40),
+  },
+  teamName: {
+    fontSize: scaleSize(35),
+    zIndex: 1,
+    height: scaleSize(43),
+    fontWeight: 'bold',
+    color: '#f0f0f0',
+  },
+  floatingAddButton: {
+    position: 'absolute',
+    bottom: scaleSize(50),
+    right: scaleSize(27),
+    backgroundColor: '#9cacbc',
+    borderRadius: scaleSize(90),
+    padding: scaleSize(35),
+    elevation: 5,
+    height: scaleSize(90),
+  },
+  floatingAddButtonText: {
+    color: 'white',
+    fontSize: scaleSize(36),
+    fontWeight: 'bold',
+    marginBottom: scaleSize(2),
+  },
+  input: {
+    height: scaleSize(40),
+    borderColor: '#ccc',
+    borderWidth: scaleSize(1.3),
+    borderRadius: scaleSize(20),
+    marginBottom: scaleSize(12),
+    paddingHorizontal: scaleSize(8),
+    width: scaleSize(200),
+    color: 'white',
+  },
+  image: {
+    width: scaleSize(123),
+    height: scaleSize(115),
+    marginBottom: scaleSize(10),
+    borderRadius: scaleSize(10),
+  },
+  categoryContainer: {
+    marginBottom: scaleSize(19),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: scaleSize(10),
+    marginHorizontal: scaleSize(1),
+    position: 'relative',
+  },
+  menuItem: {
+    paddingVertical: scaleSize(10),
+    paddingHorizontal: scaleSize(15),
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    fontSize: scaleSize(18),
+    color: 'white',
+  },
+  categoryContent: {
+    width: '105%',
+    height: '105%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  imageShadowContainer: {
+    width: '90%',
+    height: '85%',
+    borderRadius: scaleSize(20),
+    shadowColor: 'white',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.55,
+    shadowRadius: 4,
+    elevation: 8,
+    overflow: 'hidden',
+  },
+  categoryImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  categoryName: {
+    textAlign: 'center',
+    paddingTop: scaleSize(1),
+    fontSize: scaleSize(18),
+    fontWeight: 'bold',
+    color: '#f0f0f0',elevation: 8,
+  },
+  list: {
+    justifyContent: 'space-between',
+    paddingHorizontal: scaleSize(9),
+    paddingTop: HEADER_HEIGHT,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+  },
+  modalView: {
+    width: '80%',
+    borderRadius: scaleSize(30),
+    padding: scaleSize(20),
+    alignItems: 'center',
+    backgroundColor: 'black',
+    shadowColor: 'white',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: scaleSize(20),
+    width: '85%',
+  },
+  buttonSpacing: {
+    width: scaleSize(10),
+  },
+  button: {
+    elevation: 5,
+    paddingVertical: scaleSize(10),
+    paddingHorizontal: scaleSize(20),
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    borderRadius: scaleSize(90),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: scaleSize(20),
+  },
+  Xbutton: {
+    elevation: 5,
+    paddingVertical: scaleSize(10),
+    paddingHorizontal: scaleSize(13),
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',backgroundColor: 'rgba(172, 188, 198, 0.13)',
+    borderRadius: scaleSize(110),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: scaleSize(10),
+  },
+  addCategoryButton: {
+    elevation: 5,
+    paddingVertical: scaleSize(10),
+    paddingHorizontal: scaleSize(20),
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',backgroundColor: 'rgba(172, 188, 198, 0.13)',
+    borderRadius: scaleSize(90),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: scaleSize(20),
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: scaleSize(10),
+  },
+  cancelButton: {
+    elevation: 5,
+    paddingVertical: scaleSize(1),
+    paddingHorizontal: scaleSize(20),
+    borderRadius: scaleSize(90),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: scaleSize(20),
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: scaleSize(16),
+    fontWeight: 'bold',
+  },
+  XbuttonText: {
+    color: 'white',
+    fontSize: scaleSize(25),
+    fontWeight: 'bold',
+  },
+  successMessage: {
+    position: 'absolute',
+    top: scaleSize(100),
+    left: scaleSize(110),
+    transform: [{ translateX: -50 }],
+    backgroundColor: 'green',
+    padding: scaleSize(20),
+    borderRadius: scaleSize(10),
+    zIndex: 1,
+  },
+  successText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: scaleSize(18),
+  },
+  menuButton: {
+    position: 'absolute',
+    top: scaleSize(12),
+    right: scaleSize(16),
+  },
+  optionsContainer: {
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    padding: scaleSize(5),
+    borderRadius: scaleSize(10),
+  },
+  optionText: {
+    color: 'white',
+    fontSize: scaleSize(18),
+  },
+  noCategories: {
+    fontSize: scaleSize(20),
+    zIndex: 1,
+    height: scaleSize(323),
+    fontWeight: 'bold',
+    marginLeft: scaleSize(19),
+    color: 'white',
+    marginBottom: scaleSize(1),
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: scaleSize(30),
+  },
+  emptyImage: {
+    width: scaleSize(230),
+    height: scaleSize(240),
+  },
+  manageTeamButton: {
+    elevation: 5,
+    paddingVertical: scaleSize(10),
+    paddingHorizontal: scaleSize(10),
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    borderRadius: scaleSize(90),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: scaleSize(20),
+    width: '45%',
+  },
+  manageTeamButtonText: {
+    color: 'white',
+    fontSize: scaleSize(19),
+    fontWeight: 'bold', 
+  },
+  addButton: {
+    elevation: 5,
+    paddingVertical: scaleSize(10),
+    paddingHorizontal: scaleSize(10),
+    backgroundColor: 'rgba(172, 188, 198, 1.7)',
+    borderRadius: scaleSize(90),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: scaleSize(20),
+    width: '45%',
+  },
+  addButtonText: {
+    color: 'white',
+    fontSize: scaleSize(20),
+    fontWeight: 'bold',
+  },
+  menuContainer: {
+    position: 'absolute',
+    top: scaleSize(40),
+    right: scaleSize(30),
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', backgroundColor: 'black',
+    borderRadius: scaleSize(10),
+    elevation: 10,
+    padding: scaleSize(8),
+    zIndex: 10,
+  },
+  reportContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#9cacbc',   backgroundColor: 'black',
+  },
+  menuItem: {
+    paddingVertical: scaleSize(6),
+    paddingHorizontal: scaleSize(19),
+    backgroundColor: 'rgba(172, 188, 198, 1.7)', backgroundColor: 'black',
+    fontSize: scaleSize(18),
+    fontWeight: 'bold',
+    color: 'white',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imagePickerModal: {
+    width: '80%',
+    backgroundColor: 'rgba(172, 188, 198, 1.1)',backgroundColor: 'black',
+    borderRadius: scaleSize(10),
+    padding: scaleSize(22),
+    alignItems: 'center',
+  },
+  imagePickerTitle: {
+    fontSize: scaleSize(23),
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: scaleSize(10),
+  },
+  imagePickerSubtitle: {
+    fontSize: scaleSize(16),
+    color: 'white',
+    marginBottom: scaleSize(20),
+  },
+  imagePickerOptions: {
+    width: '100%',
+  },
+  imagePickerOptionText: {
+    fontSize: scaleSize(21),
+    color: 'white',
+    padding: scaleSize(8),
+    textAlign: 'center',
+  },
+});
+
+export default memo(CategoryListScreen);

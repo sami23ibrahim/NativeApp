@@ -3853,6 +3853,7 @@ import { FIREBASE_AUTH } from '../config/firebase';
 import SearchBar from '../components/SearchBar';
 import ButtonTools from '../components/ButtonTools';
 import ErrorBoundary from '../components/ErrorBoundary';
+import { useUser } from '../components/UserContext'; // Import useUser
 
 const HEADER_HEIGHT = 92;
 
@@ -3878,7 +3879,7 @@ const CategoryDetailScreen = ({ navigation }) => {
   const [loadingRole, setLoadingRole] = useState(true);
   const [suggestions, setSuggestions] = useState([]);
   const [imagePickerVisible, setImagePickerVisible] = useState(false);
-  const user = FIREBASE_AUTH.currentUser;
+  const { user } = useUser(); // Use useUser hook to get user
   const flatListRef = useRef(null);
   const searchBarRef = useRef(null);
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -4003,6 +4004,10 @@ const CategoryDetailScreen = ({ navigation }) => {
     }
   };
 
+  useEffect(() => {
+    console.log("User in CategoryDetailScreen:", user); // Debugging line
+  }, [user]);
+
   const buttons = [
     {
       iconName: 'account-cog',
@@ -4012,7 +4017,10 @@ const CategoryDetailScreen = ({ navigation }) => {
     {
       iconName: 'home',
       label: 'Home',
-      onPress: () => navigation.navigate('Home'),
+      onPress: () => {
+        console.log("Navigating to Home from CategoryDetailScreen with userName:", user?.username || user?.email); // Debugging line
+        navigation.navigate('Home', { userName: user?.username || user?.email });
+      }
     },
     {
       iconName: 'plus-thick',
@@ -4030,7 +4038,10 @@ const CategoryDetailScreen = ({ navigation }) => {
     {
       iconName: 'home',
       label: 'Home',
-      onPress: () => navigation.navigate('Home'),
+      onPress: () => {
+        console.log("Navigating to Home from CategoryDetailScreen with userName:", user?.username || user?.email); // Debugging line
+        navigation.navigate('Home', { userName: user?.username || user?.email });
+      }
     },
   ];
 
@@ -4328,8 +4339,8 @@ const CategoryDetailScreen = ({ navigation }) => {
       </View>
     </SafeAreaView>
   );
-  };
-  
+};
+
   const styles = StyleSheet.create({
     safeArea: {
       flex: 1,

@@ -205,6 +205,7 @@ import NetworkCheck from './src/components/NetworkCheck'; // Import the NetworkC
 import { SafeAreaView } from 'react-native-safe-area-context'; // Import SafeAreaView
 import ErrorBoundary from './src/components/ErrorBoundary'; // Import ErrorBoundary
 import NotificationBadge from './src/components/NotificationBadge'; // Import NotificationBadge
+import { UserProvider } from  './src/components/UserContext';
 import TestModalScreen from './src/screens/TestModalScreen'; // Ensure the correct import path
 import { StatusBar, Text ,View} from 'react-native';
 
@@ -239,6 +240,7 @@ export default function App() {
           <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
             {/* Set the StatusBar background color and style */}
             <StatusBar backgroundColor="#000000" barStyle="light-content" />
+            <UserProvider>
             <NavigationContainer theme={MyTheme}>
               <Stack.Navigator
                 initialRouteName="Login"
@@ -279,7 +281,7 @@ export default function App() {
                       const { userName } = route.params || {};
                       return (
                         <Text style={{ color: 'rgba(150, 150, 150, 0.83)', fontWeight: 'bold', fontSize: 20, textAlign: 'left' }}>
-                          Hi {userName || 'Hi User!'}!
+                          Hi {userName || 'User'}!
                         </Text>
                       ); // Show the user name or fallback to "Hi User!"
                     },
@@ -309,6 +311,7 @@ export default function App() {
                 <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} />
               </Stack.Navigator>
             </NavigationContainer>
+            </UserProvider>
           </SafeAreaView>
         </NetworkCheck>
       </MenuProvider>
