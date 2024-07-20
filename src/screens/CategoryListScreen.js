@@ -3694,7 +3694,7 @@ const CategoryListScreen = ({ navigation }) => {
   const searchBarRef = useRef(null);
 
   useEffect(() => {
-    navigation.setOptions({ title: `"${teamName.toUpperCase()}"` });
+    navigation.setOptions({ title: `"${teamName}"` });
     fetchCategoriesAndRole();
 
     const unsubscribeFocus = navigation.addListener('focus', () => {

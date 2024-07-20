@@ -4491,7 +4491,7 @@ const HomeScreen = ({ navigation }) => {
           <View style={styles.teamInfo}>
             <Text style={styles.teamName}>{item.name}</Text>
             <View style={styles.nameContainer}>
-              <Text style={styles.teamMembersDetail}>By {item.owner.name.toUpperCase()}</Text>
+              <Text style={styles.teamMembersDetail}>By {item.owner.name}</Text>
             </View>
             <Text style={styles.teamMembersDetail}>Members: {item.members.length}</Text>
           </View>
